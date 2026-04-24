@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rwaos-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rwaos_backend
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rwaos_backend"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rwaos-backend
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/rwaos_backend
+      BACKEND_PORT: "8080"
+      AUTH_ADMIN_WALLETS: "0xf21b5742477a5e065ef86dedba40b34527ac93fd"
+      AUTH_OPERATOR_WALLETS: ""
+      AUTH_AUDITOR_WALLETS: ""
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rwaos-frontend
+    environment:
+      INTERNAL_API_BASE_URL: http://backend:8080
+      INTERNAL_API_AUTH_TOKEN: admin-token
+      NEXT_PUBLIC_API_BASE_URL: http://backend:8080
+      NEXT_PUBLIC_API_AUTH_TOKEN: admin-token
+      NEXT_PUBLIC_CHAIN_ID: "421614"
+      NEXT_PUBLIC_RPC_URL: https://sepolia-rollup.arbitrum.io/rpc
+      NEXT_PUBLIC_CONTRACT_CONFIDENTIAL_RWA_TOKEN: 0x00094fc240029a342fB1152bBc7a15F73C7142C2
+      NEXT_PUBLIC_CONTRACT_DISCLOSURE_REGISTRY: 0x5118aEC317dC21361Cad981944532F1f90D7aBb8
+      NEXT_PUBLIC_CONTRACT_TRANSFER_CONTROLLER: 0x049B1712B9E624a01Eb4C40d10aBF42E89a14314
+      NEXT_PUBLIC_CONTRACT_AUDIT_ANCHOR: 0x79279257A998d3a5E26B70cb538b09fEe2f90174
+      PORT: "3313"
+    depends_on:
+      - backend
+    ports:
+      - "3313:3313"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

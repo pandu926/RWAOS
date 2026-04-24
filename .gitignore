@@ -1,0 +1,18 @@
+# Global ignores for public repository hygiene
+.codex/
+
+# Build artifacts
+backend/target/
+frontend/playwright-report/
+frontend/test-results/
+
+# Local environment files
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+
+# OS/editor junk
+.DS_Store
+Thumbs.db

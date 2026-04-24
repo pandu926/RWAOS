@@ -1,0 +1,56 @@
+{
+  "network": "arbitrumSepolia",
+  "chainId": 421614,
+  "owner": "0xf21b5742477A5e065EF86dEdbA40b34527AC93fD",
+  "receiver": "0x6274D61496C89565cD19dd174F92E2E0c0E01B9d",
+  "contracts": {
+    "ConfidentialRWAToken": "0x00094fc240029a342fB1152bBc7a15F73C7142C2",
+    "DisclosureRegistry": "0x5118aEC317dC21361Cad981944532F1f90D7aBb8",
+    "TransferController": "0x049B1712B9E624a01Eb4C40d10aBF42E89a14314",
+    "AuditAnchor": "0x79279257A998d3a5E26B70cb538b09fEe2f90174"
+  },
+  "txs": {
+    "mint": {
+      "ok": true,
+      "hash": "0x20b1b3abaef72509494b6d8c21a3c944a1e962b67264c8a609d43e64a86efac2",
+      "blockNumber": 262228167,
+      "status": 1,
+      "gasUsed": "266281"
+    },
+    "setOperator": {
+      "ok": true,
+      "hash": "0x7a217bfd657a94ba3dfc62213eaa05fd2e57c6ee42c100e3c28dff359cd44c3e",
+      "blockNumber": 262228174,
+      "status": 1,
+      "gasUsed": "46660"
+    },
+    "disclosure": {
+      "ok": true,
+      "hash": "0x96173766188c5ae79b7e9e58dba1013a7dd605a82f040f05649a842c5d4ccabe",
+      "blockNumber": 262228185,
+      "status": 1,
+      "gasUsed": "72468"
+    },
+    "directConfidentialTransfer": {
+      "ok": true,
+      "hash": "0xbc8c669f48c8250d3bbdbe0425995677d007b6529c422e0802859dd81d788428",
+      "blockNumber": 262228194,
+      "status": 1,
+      "gasUsed": "305922"
+    },
+    "confidentialTransferViaController": {
+      "ok": true,
+      "hash": "0xbe4aadadc73e772823cb758d79b0e7472ab89568face868aff0701e41852c5ad",
+      "blockNumber": 262228204,
+      "status": 1,
+      "gasUsed": "339016"
+    },
+    "auditAnchor": {
+      "ok": true,
+      "hash": "0x0c094972a1f36b0725597cc98cfe9fbd3c7ea9f1b77312371ba6a98b7d638e5b",
+      "blockNumber": 262228213,
+      "status": 1,
+      "gasUsed": "117891"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "confidential-rwa-os-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hardhat TypeScript prototype for Confidential RWA OS contracts",
+  "scripts": {
+    "build": "hardhat compile",
+    "compile": "hardhat compile",
+    "export:abis": "hardhat run scripts/export-abis.ts --network hardhat",
+    "proof:onchain": "hardhat run scripts/proof-onchain-flow.ts --network arbitrumSepolia",
+    "proof:confidential-attempt": "hardhat run scripts/proof-confidential-attempt.ts --network arbitrumSepolia",
+    "test": "hardhat test",
+    "clean": "hardhat clean"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/node": "^22.10.1",
+    "dotenv": "^17.4.2",
+    "hardhat": "^2.22.18",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@iexec-nox/handle": "^0.1.0-beta.10",
+    "@iexec-nox/nox-confidential-contracts": "^0.1.0",
+    "@iexec-nox/nox-protocol-contracts": "^0.1.0",
+    "@openzeppelin/contracts": "^5.1.0",
+    "viem": "^2.48.4"
+  }
+}
