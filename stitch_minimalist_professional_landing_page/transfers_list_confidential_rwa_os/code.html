@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#d8e3fb",
+                    "tertiary-fixed-dim": "#c4c7c9",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "surface-container-highest": "#d8e3fb",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "on-tertiary-container": "#818486",
+                    "surface": "#f9f9ff",
+                    "on-secondary": "#ffffff",
+                    "secondary-fixed": "#d3e4fe",
+                    "on-surface-variant": "#45464d",
+                    "surface-container-low": "#f0f3ff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#bec6e0",
+                    "on-surface": "#111c2d",
+                    "on-tertiary-fixed": "#191c1e",
+                    "on-primary-container": "#7c839b",
+                    "tertiary": "#000000",
+                    "surface-dim": "#cfdaf2",
+                    "primary-fixed-dim": "#bec6e0",
+                    "surface-tint": "#565e74",
+                    "on-primary-fixed": "#131b2e",
+                    "on-tertiary-fixed-variant": "#444749",
+                    "inverse-on-surface": "#ecf1ff",
+                    "background": "#f9f9ff",
+                    "on-secondary-container": "#54647a",
+                    "surface-bright": "#f9f9ff",
+                    "on-error": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-container": "#191c1e",
+                    "tertiary-fixed": "#e0e3e5",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "primary": "#000000",
+                    "surface-container-high": "#dee8ff",
+                    "primary-fixed": "#dae2fd",
+                    "on-secondary-fixed": "#0b1c30",
+                    "surface-container": "#e7eeff",
+                    "on-background": "#111c2d",
+                    "outline": "#76777d",
+                    "inverse-surface": "#263143",
+                    "secondary": "#505f76",
+                    "secondary-container": "#d0e1fb",
+                    "outline-variant": "#c6c6cd",
+                    "primary-container": "#131b2e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "space-md": "16px",
+                    "space-2xl": "80px",
+                    "margin-desktop": "48px",
+                    "unit": "8px",
+                    "container-max": "1280px",
+                    "space-xs": "4px",
+                    "space-xl": "48px",
+                    "space-sm": "8px",
+                    "space-lg": "24px",
+                    "margin-mobile": "16px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-xl": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-lg": ["30px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "1.4", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-xl": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- SideNavBar Shell -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col py-6 font-sans antialiased text-sm font-medium tracking-tight">
+<div class="px-6 mb-10 flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-lg" data-icon="token">token</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tighter text-slate-900 dark:text-white leading-none">RWA OS</h1>
+<p class="text-[10px] uppercase tracking-widest text-slate-500 mt-1">Confidential Layer</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-6 py-3 transition-colors duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-6 py-3 transition-colors duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="token">token</span>
+                Assets
+            </a>
+<a class="flex items-center px-6 py-3 transition-colors duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="group">group</span>
+                Investors
+            </a>
+<a class="flex items-center px-6 py-3 transition-colors duration-200 text-slate-900 dark:text-white bg-white dark:bg-slate-900 border-r-2 border-slate-900 dark:border-slate-50 font-semibold" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="swap_horiz">swap_horiz</span>
+                Transfers
+            </a>
+<a class="flex items-center px-6 py-3 transition-colors duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="visibility_off">visibility_off</span>
+                Disclosures
+            </a>
+<a class="flex items-center px-6 py-3 transition-colors duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="verified_user">verified_user</span>
+                Audit
+            </a>
+<a class="flex items-center px-6 py-3 transition-colors duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="assessment">assessment</span>
+                Reports
+            </a>
+</nav>
+<div class="mt-auto px-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+<a class="flex items-center py-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+                Settings
+            </a>
+</div>
+</aside>
+<!-- TopNavBar Shell -->
+<header class="fixed top-0 right-0 left-64 h-16 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 w-full font-sans text-sm tracking-wide shadow-sm dark:shadow-none">
+<div class="flex items-center gap-4">
+<span class="text-lg font-semibold text-slate-900 dark:text-white">Confidential RWA OS</span>
+<span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container rounded text-[10px] font-bold uppercase tracking-wider">Arbitrum Sepolia</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-slate-500">
+<span class="material-symbols-outlined cursor-pointer hover:text-slate-900 transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-slate-900 transition-colors" data-icon="settings">settings</span>
+</div>
+<div class="flex items-center gap-3 pl-6 border-l border-slate-200 dark:border-slate-800">
+<div class="text-right">
+<p class="font-semibold text-slate-900 dark:text-white leading-none">Admin.eth</p>
+<p class="text-[10px] text-slate-500 mt-1 uppercase">Institutional User</p>
+</div>
+<div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-1 ring-slate-200 ring-offset-2">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="professional portrait of a financial executive with short dark hair in a crisp white shirt against a neutral grey background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6EiXH7YfQRC9qrNkOOinSS1nV5LRcCbzSPpzxDpBcNGHc30e9pMie0iqqOiJ8zwk7Q5zFNrw_VJG2dQm-gKxrs-0xCFH6XapUFF0nTT_ht9mVeROpGR6xGeYlvs9L9yuCbEUyeOtRN7ZtG51elHUTIagOyEPBRS8Mc3ERn3d3ejJYUPQNqF-eRd4St4o5UhqsE6xp9_5kBatsMMOv-kOwi_7ciu7vSCl-2qBwlZKcozo1ttME2kCNrSJECiuIat0O8g-DTbivYt8"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 px-8 pb-12 min-h-screen">
+<!-- Header Section -->
+<section class="flex items-end justify-between mb-8">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-primary">Transfers</h2>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-on-surface-variant font-body-sm text-body-sm">1,240 Total recorded transfers</span>
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+<span class="text-[12px] font-medium text-green-600 uppercase tracking-tighter">Live Monitor</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all font-label-md text-label-md">
+<span class="material-symbols-outlined text-md" data-icon="add">add</span>
+                Create Transfer
+            </button>
+</section>
+<!-- Privacy Banner -->
+<div class="mb-6 bg-surface-container-low border border-outline-variant p-4 rounded-xl flex items-start gap-4">
+<span class="material-symbols-outlined text-primary-container" data-icon="info">info</span>
+<div class="flex-1">
+<p class="font-body-sm text-body-sm text-on-surface">
+<span class="font-bold">Confidentiality Note:</span> Amount and address visibility is determined by your zero-knowledge disclosure permissions. Values marked as <span class="font-mono text-[13px] bg-slate-200 px-1 rounded">[Hidden]</span> require elevated access keys for decryption.
+                </p>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="close">close</span>
+</button>
+</div>
+<!-- Filter Bar -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 mb-6 shadow-sm flex flex-wrap items-center gap-4">
+<div class="flex-1 min-w-[240px] relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-transparent border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-body-sm text-body-sm transition-all" placeholder="Search by ID, Reference, or TxHash..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<select class="bg-transparent border border-outline-variant rounded-lg px-4 py-2 font-label-sm text-label-sm focus:ring-1 focus:ring-primary outline-none">
+<option>All Assets</option>
+<option>USD-T</option>
+<option>GOLD-RWA</option>
+<option>EU-Bonds</option>
+</select>
+<select class="bg-transparent border border-outline-variant rounded-lg px-4 py-2 font-label-sm text-label-sm focus:ring-1 focus:ring-primary outline-none">
+<option>Status: All</option>
+<option>Submitted</option>
+<option>Pending</option>
+<option>Confirmed</option>
+<option>Failed</option>
+</select>
+<div class="relative">
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg font-label-sm text-label-sm hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="calendar_today">calendar_today</span>
+                        Date Range
+                        <span class="material-symbols-outlined text-sm" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 text-primary font-label-sm text-label-sm hover:underline decoration-2 underline-offset-4">
+<span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span>
+                    More Filters
+                </button>
+</div>
+</section>
+<!-- Transfers Table -->
+<section class="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant">
+<tr>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface uppercase tracking-wider">Transfer ID</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface uppercase tracking-wider">Asset</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface uppercase tracking-wider">From / To</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface uppercase tracking-wider text-right">Amount</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface uppercase tracking-wider text-right">Timestamp</th>
+<th class="px-6 py-4"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4 font-mono font-medium text-primary">#TX9021</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-xs text-emerald-700" data-icon="attach_money">attach_money</span>
+</div>
+<span class="font-label-sm text-label-sm">USD-T</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="space-y-1">
+<div class="flex items-center gap-2 font-mono text-[12px] text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                        0x71C...3a52
+                                    </div>
+<div class="flex items-center gap-2 font-mono text-[12px] text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        0x4B2...e910
+                                    </div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<span class="font-bold text-primary font-body-md text-body-md">500,000.00</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                                    Confirmed
+                                </span>
+</td>
+<td class="px-6 py-4 text-right font-body-sm text-body-sm text-on-surface-variant">
+                                Today, 14:22
+                            </td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:bg-slate-100 rounded transition-colors text-outline">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4 font-mono font-medium text-primary">#TX9019</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-xs text-yellow-700" data-icon="payments">payments</span>
+</div>
+<span class="font-label-sm text-label-sm">GOLD-RWA</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="space-y-1">
+<div class="flex items-center gap-2 font-mono text-[12px] text-slate-400 italic">
+                                        [Hidden Address]
+                                    </div>
+<div class="flex items-center gap-2 font-mono text-[12px] text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        0x9A1...f321
+                                    </div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<span class="font-mono text-[13px] bg-slate-100 px-2 py-1 rounded text-slate-500">[Confidential]</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                                    Pending
+                                </span>
+</td>
+<td class="px-6 py-4 text-right font-body-sm text-body-sm text-on-surface-variant">
+                                Today, 11:05
+                            </td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:bg-slate-100 rounded transition-colors text-outline">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4 font-mono font-medium text-primary">#TX8998</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-xs text-slate-700" data-icon="account_balance">account_balance</span>
+</div>
+<span class="font-label-sm text-label-sm">EU-Bonds</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="space-y-1">
+<div class="flex items-center gap-2 font-mono text-[12px] text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        0x332...11a9
+                                    </div>
+<div class="flex items-center gap-2 font-mono text-[12px] text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        0xBB9...440c
+                                    </div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<span class="font-bold text-primary font-body-md text-body-md">2,450,000.00</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
+                                    Submitted
+                                </span>
+</td>
+<td class="px-6 py-4 text-right font-body-sm text-body-sm text-on-surface-variant">
+                                Yesterday, 18:45
+                            </td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:bg-slate-100 rounded transition-colors text-outline">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4 font-mono font-medium text-primary">#TX8950</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-xs text-red-700" data-icon="error">error</span>
+</div>
+<span class="font-label-sm text-label-sm">USD-T</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="space-y-1">
+<div class="flex items-center gap-2 font-mono text-[12px] text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        0x101...99bc
+                                    </div>
+<div class="flex items-center gap-2 font-mono text-[12px] text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        0x883...22e1
+                                    </div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<span class="font-bold text-error font-body-md text-body-md">15,000.00</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                                    Failed
+                                </span>
+</td>
+<td class="px-6 py-4 text-right font-body-sm text-body-sm text-on-surface-variant">
+                                Oct 12, 09:12
+                            </td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:bg-slate-100 rounded transition-colors text-outline">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 (Confidential) -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4 font-mono font-medium text-primary">#TX8911</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-xs text-purple-700" data-icon="lock">lock</span>
+</div>
+<span class="font-label-sm text-label-sm">Shielded Asset</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="space-y-1">
+<div class="flex items-center gap-2 font-mono text-[12px] text-slate-400 italic">
+                                        [Hidden Address]
+                                    </div>
+<div class="flex items-center gap-2 font-mono text-[12px] text-slate-400 italic">
+                                        [Hidden Address]
+                                    </div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<span class="font-mono text-[13px] bg-slate-100 px-2 py-1 rounded text-slate-500">[Hidden]</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                                    Confirmed
+                                </span>
+</td>
+<td class="px-6 py-4 text-right font-body-sm text-body-sm text-on-surface-variant">
+                                Oct 10, 15:00
+                            </td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:bg-slate-100 rounded transition-colors text-outline">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="bg-surface-container-low px-6 py-4 flex items-center justify-between border-t border-outline-variant">
+<span class="font-body-sm text-body-sm text-on-surface-variant">
+                    Showing <span class="font-semibold text-on-surface">1-10</span> of <span class="font-semibold text-on-surface">1,240</span> transfers
+                </span>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center w-9 h-9 rounded-lg border border-outline-variant hover:bg-white transition-all text-outline disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm">1</button>
+<button class="flex items-center justify-center w-9 h-9 rounded-lg border border-outline-variant hover:bg-white transition-all font-label-sm text-label-sm">2</button>
+<button class="flex items-center justify-center w-9 h-9 rounded-lg border border-outline-variant hover:bg-white transition-all font-label-sm text-label-sm">3</button>
+<span class="px-2 text-outline">...</span>
+<button class="flex items-center justify-center w-9 h-9 rounded-lg border border-outline-variant hover:bg-white transition-all font-label-sm text-label-sm">124</button>
+<button class="flex items-center justify-center w-9 h-9 rounded-lg border border-outline-variant hover:bg-white transition-all text-outline">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Contextual Insights / Bottom Grid -->
+<section class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-white p-6 rounded-xl border border-outline-variant shadow-sm">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-primary" data-icon="speed">speed</span>
+<h3 class="font-label-md text-label-md uppercase tracking-wide">Network Throughput</h3>
+</div>
+<div class="h-16 flex items-end gap-1.5 mb-2">
+<div class="w-full bg-primary/10 h-1/2 rounded-sm"></div>
+<div class="w-full bg-primary/10 h-3/4 rounded-sm"></div>
+<div class="w-full bg-primary/10 h-2/3 rounded-sm"></div>
+<div class="w-full bg-primary h-full rounded-sm"></div>
+<div class="w-full bg-primary/60 h-4/5 rounded-sm"></div>
+</div>
+<p class="text-[12px] text-on-surface-variant">System operating at <span class="font-bold">42 TPS</span>. Latency: 1.2s</p>
+</div>
+<div class="bg-white p-6 rounded-xl border border-outline-variant shadow-sm col-span-2">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="verified">verified</span>
+<h3 class="font-label-md text-label-md uppercase tracking-wide">Compliance Status</h3>
+</div>
+<span class="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-200 uppercase font-bold">Audited Today</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-3 rounded-lg flex items-center justify-between">
+<span class="font-body-sm text-body-sm">AML Scanning</span>
+<span class="text-green-600 font-bold">100%</span>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg flex items-center justify-between">
+<span class="font-body-sm text-body-sm">KYC Thresholds</span>
+<span class="text-green-600 font-bold">PASS</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB (Suppressed based on rules for List screen) -->
+</body></html>

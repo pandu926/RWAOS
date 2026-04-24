@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f0f3ff",
+                        "secondary": "#505f76",
+                        "on-tertiary-fixed-variant": "#444749",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "surface-container": "#e7eeff",
+                        "on-background": "#111c2d",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#ecf1ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#dee8ff",
+                        "tertiary": "#000000",
+                        "outline": "#76777d",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c4c7c9",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "surface-tint": "#565e74",
+                        "primary-fixed-dim": "#bec6e0",
+                        "secondary-fixed": "#d3e4fe",
+                        "background": "#f9f9ff",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#d0e1fb",
+                        "on-tertiary-container": "#818486",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#7c839b",
+                        "on-primary-fixed": "#131b2e",
+                        "primary-container": "#131b2e",
+                        "inverse-surface": "#263143",
+                        "on-secondary-container": "#54647a",
+                        "surface-variant": "#d8e3fb",
+                        "surface-container-highest": "#d8e3fb",
+                        "on-surface-variant": "#45464d",
+                        "inverse-primary": "#bec6e0",
+                        "surface": "#f9f9ff",
+                        "surface-bright": "#f9f9ff",
+                        "primary": "#000000",
+                        "tertiary-fixed": "#e0e3e5",
+                        "primary-fixed": "#dae2fd",
+                        "error": "#ba1a1a",
+                        "outline-variant": "#c6c6cd",
+                        "on-tertiary-fixed": "#191c1e",
+                        "on-surface": "#111c2d",
+                        "surface-dim": "#cfdaf2",
+                        "tertiary-container": "#191c1e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "space-xl": "48px",
+                        "space-lg": "24px",
+                        "space-sm": "8px",
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "margin-mobile": "16px",
+                        "space-xs": "4px",
+                        "space-md": "16px",
+                        "space-2xl": "80px",
+                        "margin-desktop": "48px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                        "headline-xl": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                        "headline-lg": ["30px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.4", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- TopNavBar -->
+<nav class="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md docked full-width top-0 sticky z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+<div class="flex justify-between items-center w-full px-6 py-4 max-w-7xl mx-auto">
+<div class="text-xl font-bold tracking-tighter text-slate-900 dark:text-slate-50 font-inter">
+                Confidential RWA OS
+            </div>
+<div class="hidden md:flex items-center gap-8 font-inter text-sm font-medium tracking-tight">
+<a class="text-slate-900 dark:white border-b-2 border-slate-900 dark:border-slate-50 pb-1" href="#">Solutions</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors" href="#">Technology</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors" href="#">Use Cases</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors" href="#">Trust</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors" href="#">Developers</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden lg:block font-inter text-sm font-medium px-4 py-2 text-slate-900 dark:text-slate-50 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-200 rounded">
+                    Contact Sales
+                </button>
+<button class="bg-primary text-on-primary font-inter text-sm font-semibold px-5 py-2.5 rounded-lg scale-95 active:scale-90 transition-transform">
+                    Launch App
+                </button>
+</div>
+</div>
+</nav>
+<!-- Hero Section -->
+<section class="relative bg-white pt-24 pb-32 overflow-hidden">
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,theme(colors.surface-container-high)_0%,transparent_50%)] opacity-30"></div>
+<div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+<div class="z-10">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full text-primary mb-6">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Enterprise Privacy Layer</span>
+</div>
+<h1 class="font-headline-xl text-[56px] leading-[1.1] mb-6 text-on-background">
+                    Confidential Asset Infrastructure for Tokenized Finance
+                </h1>
+<p class="font-body-lg text-body-lg text-secondary mb-10 max-w-lg">
+                    Kelola asset dan transfer on-chain tanpa membuka nominal, saldo, atau alokasi ke publik. Enterprise-ready privacy on public networks.
+                </p>
+<div class="flex flex-wrap gap-4">
+<button class="bg-primary text-on-primary font-label-md text-label-md px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                        Launch App
+                    </button>
+<button class="border border-outline-variant bg-white text-on-surface font-label-md text-label-md px-8 py-4 rounded-xl hover:bg-surface-container-lowest transition-all">
+                        View Concept
+                    </button>
+</div>
+</div>
+<div class="relative">
+<div class="aspect-square bg-surface-container rounded-[40px] overflow-hidden border border-outline-variant shadow-2xl">
+<img class="w-full h-full object-cover opacity-90 mix-blend-multiply" data-alt="Modern abstract digital visualization of encrypted data blocks and secure network connections in a dark blue professional corporate style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPpi0D5C6eSKMR_ef883Vch9BEyELUKq_iOgY88zyhf3D-IqoMguUqn8EDwkvW2yV-h0BY3SPRksbGJFKFtzk1S9OHdLYEK0ffQywes7jpfbuJ87spiVZczYOX3aCOiQTmD7Mp8R-PmprQvytGCTsE6ZBLqpFzqJ98EiiCz70QdmMMKyqOrZrwp4YOux3z03w3CbyQImzSiYELZspJDWrEZw2fYSV3zacgLylim1jU2qCFrvWYECbErdwyh3D1Rld5loMqeDgqVto"/>
+<div class="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent"></div>
+</div>
+<!-- Decorative element -->
+<div class="absolute -bottom-6 -left-6 bg-white p-6 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-4">
+<div class="w-12 h-12 bg-success-container/10 flex items-center justify-center rounded-full text-green-600">
+<span class="material-symbols-outlined" data-weight="fill">shield_with_heart</span>
+</div>
+<div>
+<div class="font-label-md text-label-md">Auditability Ready</div>
+<div class="font-label-sm text-label-sm text-slate-500">ZKP-based Verification</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Problem Block -->
+<section class="py-24 bg-surface-container-lowest border-y border-outline-variant/30">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-24">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-background mb-6">
+                        The Challenge of Public Chain Transparency
+                    </h2>
+<p class="font-body-md text-body-md text-secondary mb-8">
+                        Traditional public blockchains expose sensitive financial data to the world. For institutions, this lack of privacy is a barrier to entry.
+                    </p>
+</div>
+<div class="space-y-8">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-error mt-1">visibility</span>
+<div>
+<h4 class="font-label-md text-label-md mb-2">Asset Movement Monitoring</h4>
+<p class="font-body-sm text-body-sm text-secondary">Competitors and malicious actors can track your every transaction, revealing strategy and liquidity positions.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-primary mt-1">lock_open</span>
+<div>
+<h4 class="font-label-md text-label-md mb-2">The Privacy-Compliance Paradox</h4>
+<p class="font-body-sm text-body-sm text-secondary">Traditional privacy tools often break audit trails, making regulatory compliance impossible for institutional RWAs.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Solution Bento Grid -->
+<section class="py-32 bg-white">
+<div class="max-w-7xl mx-auto px-6">
+<div class="text-center mb-16">
+<h2 class="font-headline-lg text-headline-lg mb-4">Enterprise-Grade Solution</h2>
+<p class="font-body-md text-body-md text-secondary max-w-2xl mx-auto">Modular infrastructure designed to balance perfect privacy with absolute auditability.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 h-full">
+<!-- Card 1 -->
+<div class="md:col-span-2 bg-surface-container-low p-10 rounded-3xl border border-outline-variant flex flex-col justify-between overflow-hidden relative group">
+<div class="z-10">
+<div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm mb-6">
+<span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-4">Confidential Asset Management</h3>
+<p class="font-body-md text-body-md text-secondary max-w-md">Manage institutional portfolios where balances and positions are encrypted but verifiable on-chain.</p>
+</div>
+<div class="mt-12 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+<img class="rounded-xl shadow-2xl border border-outline-variant" data-alt="Clean minimal dashboard interface showing encrypted data charts and financial metrics with soft shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAL7G6TVvtzlBHWiUF8M8yfR24spYFTrPVonibOvNtcyaIjU6ljYLEFCDzEuHWOrb40ha-NIDscYBBJEE1diCIfrWgGQ9l3syQirHqf9MWQWpMsvbGaVIWMFufdYjz8zy4G7PBeLmEgMzJWOkCmXsn97Cx5AKY--RK_0hyhuQVtjBU8_pSXSy6L3E8wm71lnYqj5wr0z-Z4db97w2t1A3np7wRrX6ERbZNIzJHc75K7izUxaLTVUqhUsa5XicoEwfhNtby6xabCJ8"/>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-primary text-on-primary p-10 rounded-3xl flex flex-col justify-between">
+<div>
+<div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-white">encrypted</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-4">Private Transfers</h3>
+<p class="font-body-md text-body-md text-white/70">Execute high-value settlement without revealing the transaction amount or the specific asset type to the public ledger.</p>
+</div>
+<div class="mt-8 border-t border-white/10 pt-8">
+<ul class="space-y-3 font-label-sm text-label-sm">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">check_circle</span> Zero-Knowledge Proofs</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">check_circle</span> Instant Settlement</li>
+</ul>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="md:col-span-3 bg-white p-10 rounded-3xl border border-outline-variant flex flex-col md:flex-row items-center gap-12">
+<div class="flex-1">
+<div class="w-12 h-12 bg-surface-container-high rounded-xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary">analytics</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-4">Selective Disclosure &amp; Auditability</h3>
+<p class="font-body-md text-body-md text-secondary">The "Viewing Key" system allows you to share specific data points with regulators, auditors, or partners without exposing your entire history.</p>
+<button class="mt-6 text-primary font-label-md text-label-md flex items-center gap-2 group">
+                            Learn more about viewing keys 
+                            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+<div class="flex-1 w-full max-w-sm">
+<div class="p-6 bg-surface rounded-2xl border border-outline-variant space-y-4">
+<div class="flex justify-between items-center pb-4 border-b border-outline-variant">
+<span class="font-label-sm text-label-sm text-secondary">Auditor Access</span>
+<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-[10px] font-bold">ACTIVE</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-label-sm">Tokenized Treasury</span>
+<span class="text-label-sm font-bold">•••• ••••</span>
+</div>
+<div class="flex items-center justify-between opacity-50">
+<span class="text-label-sm">Internal Yield</span>
+<span class="text-label-sm font-bold">•••• ••••</span>
+</div>
+<div class="pt-4">
+<div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+<div class="bg-primary h-full w-2/3"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Use Case Block -->
+<section class="py-32 bg-surface-container-low">
+<div class="max-w-7xl mx-auto px-6">
+<h2 class="font-headline-lg text-headline-lg mb-16 max-w-xl">Designed for the world's most demanding financial flows.</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+<div class="space-y-4">
+<div class="text-primary font-headline-xl opacity-20">01</div>
+<h4 class="font-headline-md text-headline-md">Tokenized Treasury Units</h4>
+<p class="font-body-sm text-body-sm text-secondary">Maintain sovereign control over treasury assets while leveraging the efficiency of on-chain issuance.</p>
+</div>
+<div class="space-y-4">
+<div class="text-primary font-headline-xl opacity-20">02</div>
+<h4 class="font-headline-md text-headline-md">Internal Movement</h4>
+<p class="font-body-sm text-body-sm text-secondary">Transfer assets between subsidiaries or branches without revealing internal liquidity and allocation strategies.</p>
+</div>
+<div class="space-y-4">
+<div class="text-primary font-headline-xl opacity-20">03</div>
+<h4 class="font-headline-md text-headline-md">Controlled Auditor Access</h4>
+<p class="font-body-sm text-body-sm text-secondary">Grant read-only access to specific sub-accounts for real-time compliance monitoring without compromising total privacy.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Trust Block -->
+<section class="py-32 bg-white overflow-hidden">
+<div class="max-w-7xl mx-auto px-6">
+<div class="bg-inverse-surface text-on-primary p-16 rounded-[48px] relative">
+<div class="max-w-2xl relative z-10">
+<h2 class="font-headline-lg text-headline-lg mb-8">Ready for Pilot Production</h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-10">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-primary-fixed">hub</span>
+<div>
+<h5 class="font-label-md text-label-md mb-1">Built for Public Chains</h5>
+<p class="text-sm opacity-70">Compatible with major EVM and layer-2 networks.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-primary-fixed">admin_panel_settings</span>
+<div>
+<h5 class="font-label-md text-label-md mb-1">Role-Based Controls</h5>
+<p class="text-sm opacity-70">Granular permissions for institutional administrators.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-primary-fixed">verified</span>
+<div>
+<h5 class="font-label-md text-label-md mb-1">Security Audited</h5>
+<p class="text-sm opacity-70">Proved by tier-1 cryptographic security firms.</p>
+</div>
+</div>
+</div>
+<button class="mt-12 bg-white text-primary font-label-md text-label-md px-10 py-4 rounded-xl hover:bg-slate-100 transition-all">
+                        Schedule an Enterprise Demo
+                    </button>
+</div>
+<!-- Abstract graphic for trust -->
+<div class="absolute right-0 top-0 bottom-0 w-1/3 hidden lg:block opacity-20">
+<img class="h-full w-full object-cover" data-alt="Technical schematic of integrated circuits and fiber optics representing advanced security and high-performance technology" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtzMbth_uZ0q2e75Qo2uKIM8hPVqepIaOZDO3prljyN50yeHLWOX47EjVYDHNtG4Dd7pvnZghRcAXp4Mvb---UIsflL-2ua2i1pV5U770QfaEPE6NMEc1M9AjXCrQTy0Xg4pBHijJCmkjOQXn0ZZW9qFbByvnxl6eqtat7GaHv1aIsfCWWbkfkHInj3HRulYzhRQW71Rw8GR3lfqGb1So5KTkLQU-vt8sYuJH5U8AEKRtVE8Q-kxdx4jn-nzCMXOFTUDadky8AvPM"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
+<div class="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex flex-col gap-2">
+<div class="font-bold text-slate-900 dark:text-slate-50 font-inter">
+                    Confidential RWA OS
+                </div>
+<div class="font-inter text-xs text-slate-500 dark:text-slate-400">
+                    © 2024 Confidential RWA OS. Institutional-grade privacy for tokenized assets.
+                </div>
+</div>
+<div class="flex flex-wrap justify-center gap-8 font-inter text-xs text-slate-500 dark:text-slate-400">
+<a class="hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">Security Audit</a>
+<a class="hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">Documentation</a>
+<a class="hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">Network Status</a>
+</div>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Institutional Treasury - Asset Details | RWA OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#7c839b",
+                    "tertiary-fixed": "#e0e3e5",
+                    "tertiary-fixed-dim": "#c4c7c9",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#c6c6cd",
+                    "surface-tint": "#565e74",
+                    "surface": "#f9f9ff",
+                    "primary": "#000000",
+                    "on-tertiary-fixed": "#191c1e",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "outline": "#76777d",
+                    "tertiary": "#000000",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#dee8ff",
+                    "on-primary": "#ffffff",
+                    "tertiary-container": "#191c1e",
+                    "on-primary-fixed": "#131b2e",
+                    "primary-fixed": "#dae2fd",
+                    "on-background": "#111c2d",
+                    "surface-container": "#e7eeff",
+                    "secondary": "#505f76",
+                    "secondary-container": "#d0e1fb",
+                    "on-error-container": "#93000a",
+                    "inverse-on-surface": "#ecf1ff",
+                    "surface-bright": "#f9f9ff",
+                    "on-secondary-fixed": "#0b1c30",
+                    "on-tertiary-container": "#818486",
+                    "on-surface-variant": "#45464d",
+                    "inverse-surface": "#263143",
+                    "on-tertiary-fixed-variant": "#444749",
+                    "on-surface": "#111c2d",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#bec6e0",
+                    "primary-container": "#131b2e",
+                    "inverse-primary": "#bec6e0",
+                    "surface-container-low": "#f0f3ff",
+                    "on-error": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "surface-variant": "#d8e3fb",
+                    "surface-container-highest": "#d8e3fb",
+                    "surface-dim": "#cfdaf2",
+                    "on-secondary-container": "#54647a",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "secondary-fixed": "#d3e4fe",
+                    "on-tertiary": "#ffffff",
+                    "background": "#f9f9ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "container-max": "1280px",
+                    "space-xs": "4px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "space-md": "16px",
+                    "unit": "8px",
+                    "space-lg": "24px",
+                    "space-2xl": "80px",
+                    "space-xl": "48px",
+                    "space-sm": "8px",
+                    "margin-desktop": "48px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-xl": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-xl": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-lg": ["30px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.4", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f9f9ff;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- TopAppBar from JSON -->
+<header class="flex justify-between items-center h-16 w-full px-8 sticky top-0 bg-white border-b border-slate-200 z-40 shadow-sm font-inter antialiased text-sm">
+<div class="flex items-center gap-space-xl">
+<span class="text-xl font-bold tracking-tight text-slate-900">RWA OS</span>
+<nav class="hidden md:flex items-center gap-space-lg h-16 pt-4">
+<a class="text-slate-500 hover:text-slate-700 pb-4" href="#">Portfolio</a>
+<a class="text-slate-900 font-semibold border-b-2 border-slate-900 pb-4" href="#">Marketplace</a>
+<a class="text-slate-500 hover:text-slate-700 pb-4" href="#">Reports</a>
+<a class="text-slate-500 hover:text-slate-700 pb-4" href="#">Compliance</a>
+</nav>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-64" placeholder="Search assets..." type="text"/>
+</div>
+<button class="p-2 text-slate-500 hover:bg-slate-50 rounded-md transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-50 rounded-md transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ml-2">
+<img alt="Institutional Administrator Avatar" class="w-full h-full object-cover" data-alt="professional corporate headshot of a middle-aged institutional administrator in a suit with clean office lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQCz1VOyHP2iJ0he_N-jtoqMssqXUugAZSyymb85uD-vg67jvWUaAIes0TfJl_mzlFeIAZZqLcxi7qDIYVwHMlowCKd3YWjOuGbSIhi6GPeHr5vdTgduk_wKPLRwUtykJObHSYz8ExDJqZPXRw7K1p61wXdpJYsQk0P5Q86EQbK8Q1AuRFIN88qb8czFi1iLBI8AFX63zb3BZ8SMi_csUk-DcYLwS56kPlPwIGbPmg4XTgtCxHN6oMxWtNp886Nk7XrvkI8ot0z0E"/>
+</div>
+</div>
+</header>
+<div class="flex">
+<!-- SideNavBar from JSON -->
+<aside class="fixed left-0 top-0 flex flex-col h-screen p-4 space-y-4 bg-slate-50 border-r border-slate-200 w-64 z-30 pt-20">
+<div class="px-2 mb-6">
+<h2 class="text-lg font-black text-slate-900">Global Markets</h2>
+<p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Institutional Grade OS</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:bg-slate-100 rounded-md transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+                    Dashboard
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 bg-white text-slate-900 rounded-md shadow-sm border border-slate-200 transition-transform duration-200 translate-x-1 font-medium text-sm" href="#">
+<span class="material-symbols-outlined">token</span>
+                    Assets
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:bg-slate-100 rounded-md transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">history</span>
+                    Activity
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:bg-slate-100 rounded-md transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">account_balance</span>
+                    Counterparties
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:bg-slate-100 rounded-md transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">shield</span>
+                    Vaults
+                </a>
+</nav>
+<div class="mt-auto space-y-1 pb-4">
+<button class="w-full py-2 px-4 bg-primary text-white rounded-md font-semibold text-sm mb-4 hover:opacity-90 transition-all active:scale-[0.99]">
+                    New Asset
+                </button>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:bg-slate-100 rounded-md transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+                    Support
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:bg-slate-100 rounded-md transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">terminal</span>
+                    API Docs
+                </a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 flex-1 p-space-xl">
+<!-- Breadcrumbs -->
+<nav aria-label="Breadcrumb" class="flex mb-space-md">
+<ol class="flex items-center space-x-2 text-body-sm text-secondary">
+<li><a class="hover:text-primary transition-colors" href="#">Assets</a></li>
+<li class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-semibold text-on-surface">Institutional Treasury</span>
+</li>
+</ol>
+</nav>
+<!-- Header Section -->
+<header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-space-lg mb-space-xl">
+<div>
+<div class="flex items-center gap-space-sm mb-2">
+<h1 class="font-headline-xl text-primary">Institutional Treasury</h1>
+<span class="px-2 py-0.5 bg-surface-container-high text-on-secondary-container rounded text-label-sm font-bold">USD-T</span>
+<span class="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Active
+                        </span>
+</div>
+<p class="text-body-md text-secondary">ID: 0x82...4F29 • Sovereign Treasury Bond Instrument</p>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="px-space-md py-2 text-primary border border-outline-variant hover:bg-surface-container-low transition-all rounded-md font-label-md">
+                        View Audit Trail
+                    </button>
+<button class="px-space-md py-2 text-primary border border-outline-variant hover:bg-surface-container-low transition-all rounded-md font-label-md">
+                        Grant Disclosure
+                    </button>
+<button class="px-space-md py-2 bg-primary text-on-primary hover:opacity-90 active:scale-[0.98] transition-all rounded-md font-label-md shadow-sm">
+                        Create Transfer
+                    </button>
+</div>
+</header>
+<!-- Summary Cards Grid -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-space-xl">
+<div class="bg-white p-space-md rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-space-sm">
+<span class="text-secondary font-label-md">Asset Status</span>
+<span class="material-symbols-outlined text-primary-container">verified_user</span>
+</div>
+<div class="text-headline-md text-primary">Active</div>
+<div class="text-label-sm text-emerald-600 mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        Verified Compliance
+                    </div>
+</div>
+<div class="bg-white p-space-md rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-space-sm">
+<span class="text-secondary font-label-md">Total Holders</span>
+<span class="material-symbols-outlined text-primary-container">groups</span>
+</div>
+<div class="text-headline-md text-primary">42</div>
+<div class="text-label-sm text-secondary mt-1">Institutional Entities</div>
+</div>
+<div class="bg-white p-space-md rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-space-sm">
+<span class="text-secondary font-label-md">Recent Transfers</span>
+<span class="material-symbols-outlined text-primary-container">swap_horiz</span>
+</div>
+<div class="text-headline-md text-primary">128</div>
+<div class="text-label-sm text-emerald-600 mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                        +12% this month
+                    </div>
+</div>
+<div class="bg-white p-space-md rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-space-sm">
+<span class="text-secondary font-label-md">Active Disclosures</span>
+<span class="material-symbols-outlined text-primary-container">visibility</span>
+</div>
+<div class="text-headline-md text-primary">3</div>
+<div class="text-label-sm text-secondary mt-1">Restricted Access</div>
+</div>
+</section>
+<!-- Main Content Tabs -->
+<section class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+<div class="border-b border-outline-variant bg-surface-container-lowest px-space-lg">
+<nav class="flex gap-space-xl">
+<button class="py-space-md border-b-2 border-primary text-primary font-label-md">Overview</button>
+<button class="py-space-md text-secondary hover:text-primary transition-colors font-label-md">Activity</button>
+<button class="py-space-md text-secondary hover:text-primary transition-colors font-label-md">Access / Disclosure</button>
+</nav>
+</div>
+<div class="p-space-xl">
+<!-- Overview Tab Content -->
+<div class="max-w-4xl">
+<div class="mb-space-xl flex items-start gap-space-md p-space-md bg-surface-container rounded-lg border border-primary-container/10">
+<span class="material-symbols-outlined text-primary-container">info</span>
+<div>
+<h4 class="font-label-md text-primary mb-1">Confidentiality Note</h4>
+<p class="text-body-sm text-secondary">This asset utilizes zero-knowledge proofs for privacy. Certain contract metadata and specific transaction volumes are cryptographically hidden from non-authorized observers.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-xl">
+<div class="space-y-space-lg">
+<div>
+<label class="text-label-sm text-on-primary-container uppercase tracking-wider block mb-1">Contract Address</label>
+<div class="flex items-center gap-2 group">
+<code class="text-body-md font-mono bg-surface-container-low px-2 py-1 rounded">0x82...4F29••••••••••••</code>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity text-secondary hover:text-primary">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+<div>
+<label class="text-label-sm text-on-primary-container uppercase tracking-wider block mb-1">Asset Type</label>
+<p class="text-body-md font-medium">Treasury / Sovereign Debt</p>
+</div>
+<div>
+<label class="text-label-sm text-on-primary-container uppercase tracking-wider block mb-1">Issuance Date</label>
+<p class="text-body-md font-medium">October 12, 2023</p>
+</div>
+</div>
+<div class="space-y-space-lg">
+<div>
+<label class="text-label-sm text-on-primary-container uppercase tracking-wider block mb-1">Description</label>
+<p class="text-body-md text-secondary leading-relaxed">
+                                        A tokenized representation of AAA-rated short-term sovereign treasury instruments. Designed for institutional liquidity management and collateralization within the RWA OS ecosystem. Subject to enhanced KYC/AML disclosure rules.
+                                    </p>
+</div>
+<div>
+<label class="text-label-sm text-on-primary-container uppercase tracking-wider block mb-1">Jurisdiction</label>
+<p class="text-body-md font-medium">Global / Multi-jurisdictional</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Hidden Activity (Simulated Section) -->
+<div class="mt-space-2xl border-t border-outline-variant pt-space-xl">
+<div class="flex justify-between items-center mb-space-lg">
+<h3 class="font-headline-md text-primary">Recent Transfers</h3>
+<button class="text-label-md text-primary-container hover:underline">View All</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant">
+<th class="pb-space-md font-label-md text-secondary px-4">Date</th>
+<th class="pb-space-md font-label-md text-secondary px-4">From</th>
+<th class="pb-space-md font-label-md text-secondary px-4">To</th>
+<th class="pb-space-md font-label-md text-secondary px-4">Amount</th>
+<th class="pb-space-md font-label-md text-secondary px-4">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="py-space-md px-4 text-body-sm">2023-11-24 14:22</td>
+<td class="py-space-md px-4 text-body-sm font-mono">0x4a...d9e1</td>
+<td class="py-space-md px-4 text-body-sm font-mono">0x1c...a3f4</td>
+<td class="py-space-md px-4 text-body-sm font-medium">1,250,000.00 <span class="text-secondary text-[12px]">USD-T</span></td>
+<td class="py-space-md px-4">
+<span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[12px] rounded-full font-semibold">Completed</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="py-space-md px-4 text-body-sm">2023-11-24 09:15</td>
+<td class="py-space-md px-4 text-body-sm font-mono">0x7b...e422</td>
+<td class="py-space-md px-4 text-body-sm italic text-secondary">[Hidden]</td>
+<td class="py-space-md px-4 text-body-sm italic text-secondary">[Hidden]</td>
+<td class="py-space-md px-4">
+<span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[12px] rounded-full font-semibold">Completed</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="py-space-md px-4 text-body-sm">2023-11-23 18:04</td>
+<td class="py-space-md px-4 text-body-sm font-mono">0x2f...88b2</td>
+<td class="py-space-md px-4 text-body-sm font-mono">0x9a...cc31</td>
+<td class="py-space-md px-4 text-body-sm font-medium">500,000.00 <span class="text-secondary text-[12px]">USD-T</span></td>
+<td class="py-space-md px-4">
+<span class="px-2 py-1 bg-amber-50 text-amber-700 text-[12px] rounded-full font-semibold">Processing</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Access & Disclosure (Simulated Section) -->
+<div class="mt-space-2xl border-t border-outline-variant pt-space-xl">
+<div class="flex justify-between items-center mb-space-lg">
+<h3 class="font-headline-md text-primary">Active Disclosure Permissions</h3>
+<button class="flex items-center gap-2 text-label-md text-primary border border-outline-variant px-4 py-2 rounded-md hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                                Add Permission
+                            </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<div class="flex items-center justify-between p-space-md border border-outline-variant rounded-lg">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container">account_balance</span>
+</div>
+<div>
+<p class="font-label-md text-primary">Central Bank Auditor</p>
+<p class="text-body-sm text-secondary">Full Transaction Visibility</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary cursor-pointer hover:text-error transition-colors">more_vert</span>
+</div>
+<div class="flex items-center justify-between p-space-md border border-outline-variant rounded-lg">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container">gavel</span>
+</div>
+<div>
+<p class="font-label-md text-primary">Compliance Officer (L1)</p>
+<p class="text-body-sm text-secondary">KYC/AML Data Access</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary cursor-pointer hover:text-error transition-colors">more_vert</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body></html>

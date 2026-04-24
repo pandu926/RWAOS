@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dashboard | Confidential RWA OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#d8e3fb",
+                    "on-error-container": "#93000a",
+                    "secondary": "#505f76",
+                    "on-tertiary-container": "#818486",
+                    "secondary-fixed": "#d3e4fe",
+                    "outline": "#76777d",
+                    "surface-container-high": "#dee8ff",
+                    "surface-container-highest": "#d8e3fb",
+                    "on-tertiary-fixed": "#191c1e",
+                    "on-primary-fixed": "#131b2e",
+                    "tertiary-fixed-dim": "#c4c7c9",
+                    "surface-container-low": "#f0f3ff",
+                    "secondary-container": "#d0e1fb",
+                    "on-tertiary-fixed-variant": "#444749",
+                    "on-surface": "#111c2d",
+                    "on-secondary": "#ffffff",
+                    "background": "#f9f9ff",
+                    "on-primary-container": "#7c839b",
+                    "tertiary": "#000000",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#e7eeff",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "error": "#ba1a1a",
+                    "on-background": "#111c2d",
+                    "inverse-primary": "#bec6e0",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#263143",
+                    "on-surface-variant": "#45464d",
+                    "primary-fixed-dim": "#bec6e0",
+                    "on-secondary-container": "#54647a",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "surface-bright": "#f9f9ff",
+                    "tertiary-fixed": "#e0e3e5",
+                    "primary": "#000000",
+                    "on-primary": "#ffffff",
+                    "on-secondary-fixed": "#0b1c30",
+                    "outline-variant": "#c6c6cd",
+                    "surface": "#f9f9ff",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "surface-dim": "#cfdaf2",
+                    "primary-container": "#131b2e",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#565e74",
+                    "primary-fixed": "#dae2fd",
+                    "inverse-on-surface": "#ecf1ff",
+                    "tertiary-container": "#191c1e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "space-sm": "8px",
+                    "unit": "8px",
+                    "margin-mobile": "16px",
+                    "space-xl": "48px",
+                    "container-max": "1280px",
+                    "space-2xl": "80px",
+                    "space-xs": "4px",
+                    "space-md": "16px",
+                    "space-lg": "24px",
+                    "margin-desktop": "48px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-xl": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "1.4", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-lg": ["30px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-xl": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 z-50">
+<div class="flex flex-col h-full p-4">
+<!-- Brand -->
+<div class="flex items-center gap-3 mb-10 px-4">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-lg" data-icon="security" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50">RWA OS</h1>
+<p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Confidential Layer</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 space-y-1">
+<!-- Dashboard Active -->
+<a class="flex items-center gap-3 px-4 py-2 text-slate-900 dark:text-slate-50 bg-slate-50 dark:bg-slate-900 rounded-md font-semibold border-l-2 border-slate-900 dark:border-slate-50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span class="font-label-md text-label-md">Assets</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-label-md text-label-md">Investors</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="swap_horiz">swap_horiz</span>
+<span class="font-label-md text-label-md">Transfers</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+<span class="font-label-md text-label-md">Disclosures</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span class="font-label-md text-label-md">Audit</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<!-- Bottom User Profile Area -->
+<div class="mt-auto border-t border-slate-100 pt-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+<img alt="Admin User" class="w-full h-full rounded-full object-cover" data-alt="professional portrait of a financial executive in a dark suit with a neutral background, corporate clean style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMKo8-bNMdTF-f2ul-ozZy8zNI22AiTK--EgFsupJTkZ1vaMWPtKQin5acOCwQ2qUsRE3akyogF8wj9HluyymWLNgzfBYpxNfqcRRCKCMjIB9zyylRDpUaiTSTzIWq5owMGiiohk-cM26WxsJqfcycFSiahVKm2zT60--Z2d22pv8uD8CwYx2NEcJ8szhXBQR1ZF409DLwtAZCqW7mlqBH_ozb_hUrChudUbMLQeI-6vi5x30mg3VYwPV3WG4PKB7E4ReUebqC6r4"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-sm font-bold truncate">Admin</p>
+<p class="text-xs text-slate-500 truncate">Arbitrum Sepolia</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-40 flex items-center justify-between px-8">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-96 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-slate-200 transition-all" placeholder="Search confidential assets..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-xs font-bold text-slate-600">Arbitrum Sepolia</span>
+</div>
+<div class="flex items-center gap-1 border-x px-4 border-slate-100 h-10">
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-label-md text-label-md text-slate-900 font-bold">Admin</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-16 min-h-screen bg-slate-50/30">
+<div class="p-margin-desktop max-w-[1280px] mx-auto space-y-space-xl">
+<!-- Alert Banner -->
+<div class="flex items-center justify-between p-4 bg-error-container border border-error/10 rounded-xl">
+<div class="flex items-center gap-3 text-on-error-container">
+<span class="material-symbols-outlined text-error" data-icon="report_problem" style="font-variation-settings: 'FILL' 1;">report_problem</span>
+<div>
+<p class="font-label-md text-label-md">Action Required</p>
+<p class="font-body-sm text-body-sm opacity-90">Pending Compliance Reviews: 3 assets require immediate disclosure updates.</p>
+</div>
+</div>
+<button class="px-4 py-1.5 bg-white text-error font-label-sm text-label-sm rounded border border-error/20 hover:bg-slate-50 transition-colors">Review Now</button>
+</div>
+<!-- Page Header -->
+<header class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-slate-950">Dashboard</h2>
+<p class="font-body-md text-body-md text-slate-500 mt-1">Operational summary and key metrics.</p>
+</div>
+<div class="flex items-center gap-2 text-slate-400 bg-white px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="history">history</span>
+<span class="text-xs font-medium">Last updated: 12 Oct 2023, 09:42 AM</span>
+</div>
+</header>
+<!-- KPI Summary Cards (4) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Total Assets -->
+<div class="bg-white p-space-lg rounded-xl border border-slate-200/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all group">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 bg-slate-50 rounded-lg text-slate-600 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+</div>
+<span class="text-emerald-500 text-xs font-bold bg-emerald-50 px-2 py-1 rounded">+2.4%</span>
+</div>
+<p class="text-slate-500 font-label-md text-label-md mb-1">Total Assets</p>
+<h3 class="text-4xl font-extrabold text-slate-900 tracking-tight">12</h3>
+</div>
+<!-- Active Investors -->
+<div class="bg-white p-space-lg rounded-xl border border-slate-200/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all group">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 bg-slate-50 rounded-lg text-slate-600 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+</div>
+<span class="text-slate-400 text-xs font-bold bg-slate-50 px-2 py-1 rounded">Stable</span>
+</div>
+<p class="text-slate-500 font-label-md text-label-md mb-1">Active Investors</p>
+<h3 class="text-4xl font-extrabold text-slate-900 tracking-tight">84</h3>
+</div>
+<!-- Total Transfers -->
+<div class="bg-white p-space-lg rounded-xl border border-slate-200/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_4_20px_rgba(0,0,0,0.06)] transition-all group">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 bg-slate-50 rounded-lg text-slate-600 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="swap_horiz">swap_horiz</span>
+</div>
+<span class="text-emerald-500 text-xs font-bold bg-emerald-50 px-2 py-1 rounded">+142</span>
+</div>
+<p class="text-slate-500 font-label-md text-label-md mb-1">Total Transfers</p>
+<h3 class="text-4xl font-extrabold text-slate-900 tracking-tight">1,240</h3>
+</div>
+<!-- Pending Actions -->
+<div class="bg-white p-space-lg rounded-xl border border-slate-200/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all group">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 bg-slate-50 rounded-lg text-slate-600 group-hover:bg-error group-hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="pending_actions">pending_actions</span>
+</div>
+<div class="w-2 h-2 rounded-full bg-error animate-ping"></div>
+</div>
+<p class="text-slate-500 font-label-md text-label-md mb-1">Pending Actions</p>
+<h3 class="text-2xl font-extrabold text-slate-900 tracking-tight">5 Disclosures</h3>
+</div>
+</section>
+<!-- Main Layout Grid -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Recent Activity Feed (Col-Span-2) -->
+<div class="lg:col-span-2 space-y-space-lg">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="px-space-lg py-space-md border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+<h4 class="font-label-md text-label-md text-slate-900 flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400" data-icon="list">list</span>
+                                Recent Activity
+                            </h4>
+<button class="text-primary font-label-sm text-label-sm hover:underline">View All Logs</button>
+</div>
+<div class="divide-y divide-slate-100">
+<!-- Activity Item 1 -->
+<div class="px-space-lg py-space-md flex items-center gap-4 hover:bg-slate-50 transition-colors">
+<div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-lg" data-icon="check_circle">check_circle</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md font-semibold text-slate-900">Confidential Transfer #TX9021 confirmed</p>
+<p class="text-xs text-slate-500">Execution successful on Arbitrum Mainnet • 14 mins ago</p>
+</div>
+<button class="p-2 hover:bg-slate-200 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-slate-400" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Activity Item 2 -->
+<div class="px-space-lg py-space-md flex items-center gap-4 hover:bg-slate-50 transition-colors">
+<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-lg" data-icon="token">token</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md font-semibold text-slate-900">New Disclosure Grant for Asset ETH-TREASURY</p>
+<p class="text-xs text-slate-500">Privacy key updated for institutional observer • 2 hours ago</p>
+</div>
+<button class="p-2 hover:bg-slate-200 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-slate-400" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Activity Item 3 -->
+<div class="px-space-lg py-space-md flex items-center gap-4 hover:bg-slate-50 transition-colors">
+<div class="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-lg" data-icon="person_add">person_add</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md font-semibold text-slate-900">Investor Whitelist update for 0x123...</p>
+<p class="text-xs text-slate-500">KYC/AML compliance verified by Admin • 5 hours ago</p>
+</div>
+<button class="p-2 hover:bg-slate-200 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-slate-400" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Activity Item 4 -->
+<div class="px-space-lg py-space-md flex items-center gap-4 hover:bg-slate-50 transition-colors">
+<div class="w-10 h-10 rounded-full bg-slate-50 text-slate-500 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-lg" data-icon="description">description</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md font-semibold text-slate-900">Quarterly Audit Report Generated</p>
+<p class="text-xs text-slate-500">Ready for review in the Audit module • 1 day ago</p>
+</div>
+<button class="p-2 hover:bg-slate-200 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-slate-400" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Action Panel & Stats -->
+<div class="space-y-space-lg">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-space-lg space-y-4">
+<h4 class="font-label-md text-label-md text-slate-900 flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400" data-icon="bolt">bolt</span>
+                            Quick Actions
+                        </h4>
+<div class="space-y-2">
+<button class="w-full flex items-center justify-between px-4 py-3 bg-primary text-white rounded-lg hover:bg-slate-800 transition-colors group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+<span class="font-label-sm text-label-sm">Create Transfer</span>
+</div>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="w-full flex items-center justify-between px-4 py-3 bg-white text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="search_insights">search_insights</span>
+<span class="font-label-sm text-label-sm">View Assets</span>
+</div>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="w-full flex items-center justify-between px-4 py-3 bg-white text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="security_update_good">security_update_good</span>
+<span class="font-label-sm text-label-sm">Manage Disclosures</span>
+</div>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Visual Summary/Map Asset placeholder -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="h-32 w-full bg-slate-200 relative overflow-hidden">
+<img alt="Global Network" class="w-full h-full object-cover grayscale opacity-50" data-alt="abstract tech representation of a global network with glowing blue data nodes and interconnected lines on a dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcMAAXCS1x0Rj2wvGz4YNb5MLc0Y-Jngq8V2D1FQGOfwELSKt0Oxr9sqtwICLLy3Nad8wrx0wB9mnpry1SJ_TXdKzUttWk2LO0p0Zj-A-7khdW706tzTtIkkAUJW8DSzmgpfzxXgnlDdO0AYDCdI6PcEBrM87wQmC3gBbsn9ngJxK3SlTgJ30hWdkP6r2sZtsS6b2in5IYI0D2AWHR21QB8P9fI9OdByAau5DOZ3nEd0VXTJN1zHaZiKtgmqzb0-MyKI8AleMBV6c"/>
+<div class="absolute inset-0 bg-gradient-to-t from-white to-transparent"></div>
+<div class="absolute bottom-2 left-4">
+<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Asset Distribution</span>
+</div>
+</div>
+<div class="p-space-md">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs text-slate-600">Institutional Treasury</span>
+<span class="text-xs font-bold text-slate-900">42%</span>
+</div>
+<div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[42%]"></div>
+</div>
+<div class="flex justify-between items-center mt-4 mb-2">
+<span class="text-xs text-slate-600">Real Estate Pooled</span>
+<span class="text-xs font-bold text-slate-900">38%</span>
+</div>
+<div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-slate-400 w-[38%]"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

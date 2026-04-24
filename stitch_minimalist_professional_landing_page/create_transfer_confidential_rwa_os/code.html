@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Create New Transfer | AssetOS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary": "#505f76",
+                      "on-tertiary-container": "#818486",
+                      "primary-fixed-dim": "#bec6e0",
+                      "surface": "#f9f9ff",
+                      "surface-container-high": "#dee8ff",
+                      "on-secondary": "#ffffff",
+                      "surface-container-low": "#f0f3ff",
+                      "on-secondary-fixed": "#0b1c30",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "surface-tint": "#565e74",
+                      "inverse-surface": "#263143",
+                      "outline-variant": "#c6c6cd",
+                      "on-primary-container": "#7c839b",
+                      "tertiary-fixed-dim": "#c4c7c9",
+                      "on-surface-variant": "#45464d",
+                      "on-error-container": "#93000a",
+                      "error-container": "#ffdad6",
+                      "surface-variant": "#d8e3fb",
+                      "on-surface": "#111c2d",
+                      "inverse-on-surface": "#ecf1ff",
+                      "inverse-primary": "#bec6e0",
+                      "on-tertiary": "#ffffff",
+                      "primary-fixed": "#dae2fd",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "on-error": "#ffffff",
+                      "tertiary": "#000000",
+                      "surface-dim": "#cfdaf2",
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary-fixed": "#131b2e",
+                      "background": "#f9f9ff",
+                      "primary-container": "#131b2e",
+                      "on-tertiary-fixed": "#191c1e",
+                      "surface-container": "#e7eeff",
+                      "on-primary": "#ffffff",
+                      "surface-bright": "#f9f9ff",
+                      "tertiary-container": "#191c1e",
+                      "outline": "#76777d",
+                      "on-secondary-container": "#54647a",
+                      "surface-container-highest": "#d8e3fb",
+                      "primary": "#000000",
+                      "on-background": "#111c2d",
+                      "secondary-fixed": "#d3e4fe",
+                      "error": "#ba1a1a",
+                      "on-tertiary-fixed-variant": "#444749",
+                      "on-primary-fixed-variant": "#3f465c",
+                      "secondary-container": "#d0e1fb",
+                      "tertiary-fixed": "#e0e3e5"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "space-lg": "24px",
+                      "space-2xl": "80px",
+                      "gutter": "24px",
+                      "container-max": "1280px",
+                      "unit": "8px",
+                      "space-sm": "8px",
+                      "space-xs": "4px",
+                      "margin-desktop": "48px",
+                      "space-xl": "48px",
+                      "space-md": "16px"
+              },
+              "fontFamily": {
+                      "label-md": ["Inter"],
+                      "headline-xl": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "body-md": ["Inter"]
+              },
+              "fontSize": {
+                      "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                      "headline-xl": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "1.4", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "headline-lg": ["30px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                      "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .preview-glow {
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-screen fixed left-0 top-0 overflow-y-auto z-40 p-4 gap-1 bg-slate-50 border-r border-slate-200 w-64">
+<div class="flex items-center gap-3 px-3 py-4 mb-4">
+<div class="w-10 h-10 bg-primary flex items-center justify-center rounded-lg">
+<span class="material-symbols-outlined text-white" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<h1 class="text-lg font-extrabold text-slate-900">RWA Ledger</h1>
+<p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Confidential Node 04</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 text-slate-600 px-3 py-2 hover:bg-slate-100 rounded-md transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-3 py-2 hover:bg-slate-100 rounded-md transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label-md text-label-md">Inventory</span>
+</a>
+<!-- Active Tab: Transfers -->
+<a class="flex items-center gap-3 bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 rounded-md px-3 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="swap_horiz">swap_horiz</span>
+<span class="font-label-md text-label-md">Transfers</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-3 py-2 hover:bg-slate-100 rounded-md transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span class="font-label-md text-label-md">Compliance</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-3 py-2 hover:bg-slate-100 rounded-md transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-label-md text-label-md">Participants</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-3 py-2 hover:bg-slate-100 rounded-md transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-label-md text-label-md">Audit Log</span>
+</a>
+</nav>
+<div class="pt-4 mt-4 border-t border-slate-200 space-y-1">
+<a class="flex items-center gap-3 text-slate-600 px-3 py-2 hover:bg-slate-100 rounded-md transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="contact_support">contact_support</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-3 py-2 hover:bg-slate-100 rounded-md transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-label-md text-label-md">Documentation</span>
+</a>
+</div>
+</aside>
+<!-- Main Wrapper -->
+<div class="flex-1 ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-8 h-16 z-50 bg-white/80 backdrop-blur-md sticky top-0 border-b border-slate-200">
+<div class="flex items-center gap-6">
+<span class="text-xl font-bold tracking-tight text-slate-900">AssetOS</span>
+<div class="h-4 w-[1px] bg-slate-300"></div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full">
+<div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+<span class="text-label-sm font-label-sm text-slate-700">Arbitrum Sepolia</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 border-r border-slate-200 pr-4 mr-2">
+<button class="p-2 text-slate-500 hover:text-slate-900 transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:text-slate-900 transition-colors">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="p-2 text-slate-500 hover:text-slate-900 transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<div class="flex items-center gap-3 px-2 py-1 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+<div class="text-right">
+<p class="font-label-md text-label-md text-slate-900 leading-none">Admin</p>
+<p class="text-[11px] text-slate-500 leading-none mt-1">Super User</p>
+</div>
+<img alt="Administrator Profile" class="w-8 h-8 rounded-full border border-slate-200 object-cover" data-alt="professional portrait of a high-level corporate executive in a suit with a clean office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBs4eQ1qgyqRfBYBYz4XWr25KVPZk_dkSe7QQMyoRuz6qEveeliozrExrDlGrznKQlE64vblxzE_AOoEjVcw1bNi2kloT00hAC3tEk8sxB2MJDzzWKjuuWOHqBJRC2Q64T1kjds0UTxGDfWu8Y6Y6S66_c34eYodOdkzbtRfxAs6XvxZobDKDy6i4y0BRizrqwO8DyFK_WM_RUdsIe8gNqj5Qo8KKvZgJkOSSbrGiIRCP0oFWWywBg7Iuqm5-O6LXe4n0qJ9TGmI9o"/>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="p-8 max-w-container-max mx-auto w-full">
+<!-- Header Section -->
+<div class="flex justify-between items-start mb-space-xl">
+<div>
+<div class="flex items-center gap-2 text-secondary mb-2 hover:text-primary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_back">arrow_back</span>
+<span class="font-label-sm text-label-sm">Back to Transfers</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-slate-900">Create New Transfer</h2>
+<p class="font-body-md text-body-md text-slate-500 mt-2 max-w-2xl">Initiate a secure, confidential transfer of real-world assets. Confidentiality layers ensure transaction values remain private between parties and authorized regulatory bodies.</p>
+</div>
+<div class="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-4 py-2">
+<span class="material-symbols-outlined text-blue-600" data-icon="lock" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-label-sm text-label-sm text-blue-800">Zero-Knowledge Proof Enabled</span>
+</div>
+</div>
+<!-- Main Grid -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Left Column: Form -->
+<div class="col-span-12 lg:col-span-8 space-y-space-lg">
+<section class="bg-white rounded-xl border border-slate-200 p-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- Asset Selection -->
+<div class="col-span-2">
+<label class="block font-label-md text-label-md text-slate-700 mb-2">Select Asset</label>
+<div class="relative group">
+<select class="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-body-md appearance-none focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all">
+<option>USD-T (Institutional Treasury)</option>
+<option>PRE-F (Prime Real Estate Fund)</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<!-- Recipient -->
+<div class="col-span-2">
+<label class="block font-label-md text-label-md text-slate-700 mb-2">Recipient Address / Investor</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" data-icon="person_search">person_search</span>
+<input class="w-full bg-white border border-slate-200 rounded-lg pl-12 pr-4 py-3 text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all" placeholder="Enter wallet address (0x...) or select whitelisted investor" type="text"/>
+</div>
+<p class="mt-2 text-slate-500 font-body-sm text-body-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="info">info</span>
+                                    Address must be whitelisted within the Institutional Registry.
+                                </p>
+</div>
+<!-- Amount -->
+<div class="col-span-2 md:col-span-1">
+<label class="block font-label-md text-label-md text-slate-700 mb-2">Amount</label>
+<div class="relative">
+<div class="absolute left-4 top-1/2 -translate-y-1/2 font-label-md text-label-md text-slate-500">USD</div>
+<input class="w-full bg-white border border-slate-200 rounded-lg pl-14 pr-4 py-3 text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all" placeholder="0.00" type="number"/>
+</div>
+</div>
+<!-- Confidentiality Toggle (Visual Hint) -->
+<div class="col-span-2 md:col-span-1 flex items-end">
+<div class="w-full bg-slate-50 rounded-lg border border-slate-200 px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-green-600" data-icon="visibility_off">visibility_off</span>
+<span class="font-label-sm text-label-sm text-slate-700">Shield Amount</span>
+</div>
+<div class="w-10 h-5 bg-primary rounded-full relative">
+<div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Reference Note -->
+<div class="col-span-2">
+<label class="block font-label-md text-label-md text-slate-700 mb-2">Reference / Transaction Note <span class="text-slate-400 font-normal">(Optional)</span></label>
+<textarea class="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all" placeholder="Add internal reference or transfer context..." rows="3"></textarea>
+</div>
+</div>
+</section>
+<!-- Validation State -->
+<div class="bg-surface-container-low border border-surface-container rounded-lg p-6 flex items-start gap-4">
+<div class="p-2 bg-green-100 rounded-full text-green-700">
+<span class="material-symbols-outlined" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-slate-900">Compliance Verification Passed</h4>
+<p class="text-body-sm text-slate-600 mt-1">Institutional limits and whitelisting status have been pre-validated for this transaction. No further KYC actions are required.</p>
+</div>
+</div>
+</div>
+<!-- Right Column: Preview Panel -->
+<div class="col-span-12 lg:col-span-4">
+<div class="sticky top-24">
+<div class="bg-white rounded-xl border border-slate-200 preview-glow overflow-hidden">
+<div class="bg-slate-900 px-6 py-4">
+<h3 class="text-white font-label-md text-label-md flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-400" data-icon="account_balance_wallet">account_balance_wallet</span>
+                                    Transfer Preview
+                                </h3>
+</div>
+<div class="p-6 space-y-6">
+<div class="space-y-4">
+<div class="flex justify-between items-center pb-3 border-b border-slate-100">
+<span class="text-body-sm text-slate-500">Asset</span>
+<span class="font-label-md text-label-md text-slate-900">USD-T Institutional</span>
+</div>
+<div class="flex justify-between items-start pb-3 border-b border-slate-100">
+<span class="text-body-sm text-slate-500">Recipient</span>
+<div class="text-right">
+<p class="font-label-md text-label-md text-slate-900">Investor_Group_7</p>
+<p class="text-[12px] text-slate-400 font-mono">0x71C...4e8B</p>
+</div>
+</div>
+<div class="flex justify-between items-center pb-3 border-b border-slate-100">
+<span class="text-body-sm text-slate-500">Amount</span>
+<div class="flex flex-col items-end">
+<span class="font-headline-md text-headline-md text-slate-900">12,500.00</span>
+<span class="text-[10px] uppercase font-bold text-slate-400">Encrypted Amount</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-body-sm text-slate-500">Estimated Gas Fee</span>
+<span class="font-label-md text-label-md text-slate-700">~ 0.0004 ETH</span>
+</div>
+</div>
+<div class="bg-slate-50 rounded-lg p-4">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-slate-400" data-icon="shield">shield</span>
+<p class="text-body-sm text-slate-600 italic leading-relaxed">
+<span class="font-bold not-italic">Note:</span> The transfer amount will only be visible to you, the recipient, and authorized auditors via selective disclosure.
+                                        </p>
+</div>
+</div>
+<button class="w-full bg-primary text-white py-4 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all">
+                                    Initiate Confidential Transfer
+                                    <span class="material-symbols-outlined text-lg" data-icon="lock_open">lock_open</span>
+</button>
+<p class="text-center text-slate-400 text-[12px]">
+                                    By clicking initiate, you authorize the smart contract to move assets to the shielded pool.
+                                </p>
+</div>
+</div>
+<!-- Secondary Info Card -->
+<div class="mt-6 bg-surface p-6 border border-slate-200 rounded-xl">
+<h4 class="font-label-md text-label-md text-slate-900 mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400" data-icon="network_node">network_node</span>
+                                Network Information
+                            </h4>
+<div class="space-y-2">
+<div class="flex justify-between">
+<span class="text-body-sm text-slate-500">L2 Chain</span>
+<span class="text-body-sm text-slate-700">Arbitrum Sepolia</span>
+</div>
+<div class="flex justify-between">
+<span class="text-body-sm text-slate-500">Settlement Time</span>
+<span class="text-body-sm text-slate-700">&lt; 2 Minutes</span>
+</div>
+<div class="flex justify-between">
+<span class="text-body-sm text-slate-500">Privacy Method</span>
+<span class="text-body-sm text-slate-700">zk-SNARKs</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Reports | RWA OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "background": "#f9f9ff",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#e0e3e5",
+                    "surface-variant": "#d8e3fb",
+                    "error": "#ba1a1a",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "outline-variant": "#c6c6cd",
+                    "tertiary-fixed-dim": "#c4c7c9",
+                    "secondary-fixed": "#d3e4fe",
+                    "inverse-on-surface": "#ecf1ff",
+                    "on-tertiary-fixed": "#191c1e",
+                    "secondary-container": "#d0e1fb",
+                    "on-primary": "#ffffff",
+                    "on-surface": "#111c2d",
+                    "surface-container-highest": "#d8e3fb",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "on-primary-container": "#7c839b",
+                    "on-primary-fixed": "#131b2e",
+                    "inverse-primary": "#bec6e0",
+                    "surface-tint": "#565e74",
+                    "secondary": "#505f76",
+                    "surface-container-low": "#f0f3ff",
+                    "error-container": "#ffdad6",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-container": "#818486",
+                    "primary-fixed-dim": "#bec6e0",
+                    "on-background": "#111c2d",
+                    "tertiary-container": "#191c1e",
+                    "outline": "#76777d",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "on-secondary-container": "#54647a",
+                    "surface-container-lowest": "#ffffff",
+                    "primary": "#000000",
+                    "surface-bright": "#f9f9ff",
+                    "surface-container-high": "#dee8ff",
+                    "surface": "#f9f9ff",
+                    "primary-fixed": "#dae2fd",
+                    "on-tertiary-fixed-variant": "#444749",
+                    "on-secondary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#e7eeff",
+                    "primary-container": "#131b2e",
+                    "tertiary": "#000000",
+                    "on-secondary-fixed": "#0b1c30",
+                    "on-surface-variant": "#45464d",
+                    "surface-dim": "#cfdaf2",
+                    "inverse-surface": "#263143"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "space-xl": "48px",
+                    "space-lg": "24px",
+                    "margin-mobile": "16px",
+                    "unit": "8px",
+                    "space-xs": "4px",
+                    "space-2xl": "80px",
+                    "space-md": "16px",
+                    "margin-desktop": "48px",
+                    "gutter": "24px",
+                    "space-sm": "8px",
+                    "container-max": "1280px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-xl": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-lg": ["30px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.4", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-xl": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9f9ff; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .chart-gradient { background: linear-gradient(180deg, rgba(19, 27, 46, 0.05) 0%, rgba(19, 27, 46, 0) 100%); }
+    </style>
+</head>
+<body class="bg-background text-on-background">
+<!-- TopAppBar Shell -->
+<header class="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans antialiased text-sm fixed top-0 left-0 right-0 h-16 z-40 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-8">
+<span class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">RWA OS</span>
+<div class="hidden md:flex items-center bg-slate-100 dark:bg-slate-900 rounded-md px-3 py-1.5 gap-2 w-64 border border-slate-200 dark:border-slate-800">
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-xs w-full p-0" placeholder="Search resources..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-800">
+<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">Arbitrum Sepolia</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-md cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-md cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1"></div>
+<div class="flex items-center gap-3 ml-2">
+<div class="flex flex-col items-end">
+<span class="text-xs font-bold text-slate-900 dark:text-slate-100">Admin</span>
+<span class="text-[10px] text-slate-500 uppercase tracking-wider">Institutional</span>
+</div>
+<img alt="Admin profile avatar" class="w-8 h-8 rounded-full ring-2 ring-slate-100 dark:ring-slate-800" data-alt="Close up professional portrait of a business administrator avatar with neutral background and clean lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtPRVUL_sp8CiF3Vzd7wu3rcb8Lexgl_ycMZPHE59rU9_-6OwTKNwQu0Ybw_7yiiqoNHbxDNz-toBHxrmKWxA_zunoTS0nskmAloPZNlR2uqc4xG2yzmmG52uZ4mJ9aV_GaVTRMqQCQjHSrHPP6chhMNpsZed2CZrmoZPR6RT7dFxJLVthkDwVLhwNFNDkBkKrNjDUekHW0U3S_R5kZ31eHuohTpNJZzcixV2EBeLsZRVw2YQgIoFBJWhifTdgo2Vz89b9M0X5nsA"/>
+</div>
+</div>
+</div>
+</header>
+<!-- SideNavBar Shell -->
+<aside class="bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-50 font-sans text-[13px] font-medium fixed left-0 top-0 bottom-0 flex flex-col p-4 gap-2 w-64 border-r border-slate-200 dark:border-slate-800 z-30 pt-20">
+<div class="mb-6 px-2 flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="corporate_fare">corporate_fare</span>
+</div>
+<div>
+<p class="text-sm font-black text-slate-900 dark:text-slate-50 leading-tight">RWA OS</p>
+<p class="text-[10px] text-slate-500 font-normal uppercase tracking-tighter">Institutional Admin</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span> Dashboard
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="token">token</span> Assets
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span> Investors
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="swap_horiz">swap_horiz</span> Transfers
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span> Disclosures
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span> Audit
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 rounded-md transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span> Reports
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span> Settings
+            </a>
+</nav>
+<div class="mt-auto p-4 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+<p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Support</p>
+<p class="text-[12px] text-slate-600 dark:text-slate-300 mb-3">Need help with institutional reporting?</p>
+<button class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-1.5 rounded-md text-[12px] font-bold hover:bg-slate-50 transition-colors shadow-sm">Contact Support</button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 pt-24 px-10 pb-20 min-h-screen">
+<!-- Page Header -->
+<header class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+<div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-1">Reports</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant opacity-70">Institutional performance metrics and compliance history.</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center bg-white border border-outline-variant px-4 py-2.5 rounded shadow-sm gap-3 cursor-pointer hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-slate-400 text-[18px]" data-icon="calendar_today">calendar_today</span>
+<span class="text-label-md font-label-md">Last 30 Days</span>
+<span class="material-symbols-outlined text-slate-400 text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+<button class="flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded font-label-md text-label-md hover:opacity-90 transition-all shadow-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="share">share</span>
+                    Share Report
+                </button>
+</div>
+</header>
+<!-- KPI Grid -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter mb-space-lg">
+<!-- Total Volume -->
+<div class="bg-white p-space-md rounded-xl border border-slate-100 shadow-[0px_4px_20px_rgba(0,0,0,0.02)] flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-600" data-icon="payments">payments</span>
+</div>
+<span class="text-[12px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">+12.4%</span>
+</div>
+<p class="text-label-sm font-label-sm text-slate-500 uppercase tracking-widest mb-1">Total Volume</p>
+<p class="text-headline-md font-headline-md text-on-surface">$248.5M</p>
+<div class="mt-4 flex items-center gap-1 text-[11px] text-slate-400">
+<span class="material-symbols-outlined text-[14px]" data-icon="lock">lock</span>
+                    Aggregated/Confidential
+                </div>
+</div>
+<!-- Active Assets -->
+<div class="bg-white p-space-md rounded-xl border border-slate-100 shadow-[0px_4px_20px_rgba(0,0,0,0.02)] flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-600" data-icon="token">token</span>
+</div>
+<span class="text-[12px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">Static</span>
+</div>
+<p class="text-label-sm font-label-sm text-slate-500 uppercase tracking-widest mb-1">Active Assets</p>
+<p class="text-headline-md font-headline-md text-on-surface">12</p>
+<p class="mt-4 text-[11px] text-slate-400 italic">4 Pending Audit</p>
+</div>
+<!-- Active Holders -->
+<div class="bg-white p-space-md rounded-xl border border-slate-100 shadow-[0px_4px_20px_rgba(0,0,0,0.02)] flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-600" data-icon="person_search">person_search</span>
+</div>
+<span class="text-[12px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">+4.1%</span>
+</div>
+<p class="text-label-sm font-label-sm text-slate-500 uppercase tracking-widest mb-1">Active Holders</p>
+<p class="text-headline-md font-headline-md text-on-surface">1,402</p>
+<p class="mt-4 text-[11px] text-slate-400 italic">Verified Institutions</p>
+</div>
+<!-- Compliance Events -->
+<div class="bg-white p-space-md rounded-xl border border-slate-100 shadow-[0px_4px_20px_rgba(0,0,0,0.02)] flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-600" data-icon="policy">policy</span>
+</div>
+<span class="text-[12px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">3 Alert</span>
+</div>
+<p class="text-label-sm font-label-sm text-slate-500 uppercase tracking-widest mb-1">Compliance Events</p>
+<p class="text-headline-md font-headline-md text-on-surface">342</p>
+<p class="mt-4 text-[11px] text-slate-400 italic">100% On-chain Verified</p>
+</div>
+</section>
+<!-- Charts Section: Bento Grid Layout -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-space-lg">
+<!-- Main Trend Chart -->
+<div class="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] p-6">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Monthly Activity Trend</h3>
+<p class="text-body-sm text-slate-500">Transaction volume and transfer frequency</p>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded text-xs font-semibold text-slate-600 border border-slate-200">
+<div class="w-2 h-2 rounded-full bg-primary"></div> Volume
+                        </div>
+<div class="flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded text-xs font-semibold text-slate-600 border border-slate-200">
+<div class="w-2 h-2 rounded-full bg-slate-300"></div> Transfers
+                        </div>
+</div>
+</div>
+<!-- Visual Placeholder for Line Chart -->
+<div class="relative h-64 w-full flex items-end justify-between px-2 pt-10">
+<div class="absolute inset-0 flex flex-col justify-between pt-10 pb-6 pointer-events-none">
+<div class="border-t border-slate-100 w-full"></div>
+<div class="border-t border-slate-100 w-full"></div>
+<div class="border-t border-slate-100 w-full"></div>
+<div class="border-t border-slate-100 w-full"></div>
+</div>
+<!-- Chart Bars/Lines Simulation -->
+<div class="w-full h-full absolute bottom-6 flex items-end justify-between px-8">
+<div class="w-6 bg-slate-200 rounded-t h-[40%]"></div>
+<div class="w-6 bg-slate-200 rounded-t h-[60%]"></div>
+<div class="w-6 bg-slate-200 rounded-t h-[45%]"></div>
+<div class="w-6 bg-primary rounded-t h-[80%]"></div>
+<div class="w-6 bg-slate-200 rounded-t h-[55%]"></div>
+<div class="w-6 bg-slate-200 rounded-t h-[70%]"></div>
+<div class="w-6 bg-slate-200 rounded-t h-[90%]"></div>
+</div>
+</div>
+<div class="flex justify-between mt-4 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+<span>JAN</span><span>FEB</span><span>MAR</span><span>APR</span><span>MAY</span><span>JUN</span><span>JUL</span>
+</div>
+</div>
+<!-- Compliance Distribution Pie -->
+<div class="bg-white rounded-xl border border-slate-100 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] p-6">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-1">Compliance Distribution</h3>
+<p class="text-body-sm text-slate-500 mb-8">Status of automated policy checks</p>
+<div class="relative flex justify-center mb-8">
+<!-- Simple SVG Donut Chart -->
+<svg class="w-48 h-48" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#f1f5f9" stroke-width="12"></circle>
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#000000" stroke-dasharray="210 500" stroke-linecap="round" stroke-width="12" transform="rotate(-90 50 50)"></circle>
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#cbd5e1" stroke-dasharray="30 500" stroke-dashoffset="-210" stroke-linecap="round" stroke-width="12" transform="rotate(-90 50 50)"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-2xl font-black">94%</span>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Compliant</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-sm">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="text-slate-600 font-medium">Auto-Approved</span>
+</div>
+<span class="font-bold">88.5%</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-slate-300"></div>
+<span class="text-slate-600 font-medium">Manual Review</span>
+</div>
+<span class="font-bold">5.5%</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-red-400"></div>
+<span class="text-slate-600 font-medium">Rejected</span>
+</div>
+<span class="font-bold">6.0%</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Tabular Summary -->
+<section class="bg-white rounded-xl border border-slate-100 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden">
+<div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+<h3 class="font-headline-md text-headline-md text-on-surface">Asset Performance Summary</h3>
+<button class="text-primary text-label-sm font-label-sm flex items-center gap-1 hover:underline underline-offset-4 transition-all">
+                    View All Assets <span class="material-symbols-outlined text-[16px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-white border-b border-slate-100">
+<th class="px-6 py-4 text-label-sm font-label-sm text-slate-400 uppercase tracking-widest">Asset</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-slate-400 uppercase tracking-widest">Type</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-slate-400 uppercase tracking-widest text-center">Transfers (30d)</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-slate-400 uppercase tracking-widest text-right">Volume (Confidential)</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-slate-400 uppercase tracking-widest text-center">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50 transition-colors cursor-pointer group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-slate-900 flex items-center justify-center text-white font-bold text-xs">RE</div>
+<div>
+<p class="font-semibold text-slate-900 text-sm">US Real Estate Prime Fund</p>
+<p class="text-[11px] text-slate-500">RWA-UREP-001</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 font-medium">Real Estate</td>
+<td class="px-6 py-4 text-sm text-slate-900 font-bold text-center">452</td>
+<td class="px-6 py-4 text-sm text-slate-900 font-bold text-right">$12,450,000</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                                </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors cursor-pointer group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-slate-900 flex items-center justify-center text-white font-bold text-xs">TB</div>
+<div>
+<p class="font-semibold text-slate-900 text-sm">Institutional T-Bill Alpha</p>
+<p class="text-[11px] text-slate-500">RWA-TBIL-429</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 font-medium">Treasury</td>
+<td class="px-6 py-4 text-sm text-slate-900 font-bold text-center">1,208</td>
+<td class="px-6 py-4 text-sm text-slate-900 font-bold text-right">$156,200,450</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                                </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors cursor-pointer group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-slate-900 flex items-center justify-center text-white font-bold text-xs">PC</div>
+<div>
+<p class="font-semibold text-slate-900 text-sm">Global Private Credit II</p>
+<p class="text-[11px] text-slate-500">RWA-GPCR-092</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 font-medium">Private Credit</td>
+<td class="px-6 py-4 text-sm text-slate-900 font-bold text-center">88</td>
+<td class="px-6 py-4 text-sm text-slate-900 font-bold text-right">$45,890,000</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                                </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors cursor-pointer group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">VC</div>
+<div>
+<p class="font-semibold text-slate-900 text-sm">Late Stage VC Composite</p>
+<p class="text-[11px] text-slate-500">RWA-LSVC-510</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 font-medium">Venture Capital</td>
+<td class="px-6 py-4 text-sm text-slate-900 font-bold text-center">12</td>
+<td class="px-6 py-4 text-sm text-slate-900 font-bold text-right">$33,960,000</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-[11px] font-bold rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Paused
+                                </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between text-[12px] text-slate-400 font-medium">
+<p>Showing 4 of 12 active assets</p>
+<div class="flex gap-2">
+<button class="p-1 hover:bg-slate-100 rounded border border-slate-200">
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="p-1 hover:bg-slate-100 rounded border border-slate-200">
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Context/Status Bar Footer -->
+<footer class="fixed bottom-0 left-64 right-0 h-10 bg-white border-t border-slate-200 z-40 px-6 flex items-center justify-between">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Network Connected: Arbitrum Sepolia</span>
+</div>
+<div class="h-4 w-[1px] bg-slate-200"></div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-slate-400" data-icon="lock">lock</span>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Confidential Computing Active</span>
+</div>
+</div>
+<div>
+<span class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">RWA OS v2.4.0-Enterprise</span>
+</div>
+</footer>
+</body></html>

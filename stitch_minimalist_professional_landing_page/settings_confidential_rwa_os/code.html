@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings | RWA Operating System</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#cfdaf2",
+                    "on-secondary-container": "#54647a",
+                    "surface-container-high": "#dee8ff",
+                    "surface": "#f9f9ff",
+                    "secondary-fixed": "#d3e4fe",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "surface-bright": "#f9f9ff",
+                    "background": "#f9f9ff",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#000000",
+                    "on-primary-fixed": "#131b2e",
+                    "tertiary-container": "#191c1e",
+                    "primary-container": "#131b2e",
+                    "inverse-surface": "#263143",
+                    "on-primary-container": "#7c839b",
+                    "on-tertiary-fixed": "#191c1e",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "outline": "#76777d",
+                    "inverse-primary": "#bec6e0",
+                    "on-secondary-fixed": "#0b1c30",
+                    "error": "#ba1a1a",
+                    "surface-tint": "#565e74",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "primary": "#000000",
+                    "secondary-container": "#d0e1fb",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "outline-variant": "#c6c6cd",
+                    "on-tertiary-container": "#818486",
+                    "on-surface": "#111c2d",
+                    "tertiary-fixed-dim": "#c4c7c9",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "on-background": "#111c2d",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#444749",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f0f3ff",
+                    "surface-container": "#e7eeff",
+                    "primary-fixed-dim": "#bec6e0",
+                    "tertiary-fixed": "#e0e3e5",
+                    "surface-container-highest": "#d8e3fb",
+                    "secondary": "#505f76",
+                    "primary-fixed": "#dae2fd",
+                    "on-surface-variant": "#45464d",
+                    "surface-variant": "#d8e3fb",
+                    "inverse-on-surface": "#ecf1ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "margin-desktop": "48px",
+                    "unit": "8px",
+                    "space-sm": "8px",
+                    "gutter": "24px",
+                    "space-xl": "48px",
+                    "space-md": "16px",
+                    "container-max": "1280px",
+                    "space-xs": "4px",
+                    "space-2xl": "80px",
+                    "space-lg": "24px"
+            },
+            "fontFamily": {
+                    "headline-xl": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-xl": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "1.4", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-lg": ["30px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: #f9f9ff; }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar Shell -->
+<aside class="hidden md:flex flex-col gap-1 p-4 h-screen w-64 border-r border-slate-200 bg-slate-50 sticky top-0">
+<div class="mb-8 px-3">
+<div class="flex items-center gap-3 mb-1">
+<div class="w-8 h-8 bg-primary flex items-center justify-center rounded">
+<span class="material-symbols-outlined text-white text-lg">account_balance</span>
+</div>
+<span class="text-slate-900 font-black tracking-tight">Institutional Core</span>
+</div>
+<p class="text-xs text-slate-500 font-medium px-1">Enterprise Tier</p>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<a class="text-slate-600 px-3 py-2 flex items-center gap-3 hover:bg-slate-100 transition-all font-medium text-sm rounded" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="text-slate-600 px-3 py-2 flex items-center gap-3 hover:bg-slate-100 transition-all font-medium text-sm rounded" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+                Asset Registry
+            </a>
+<a class="text-slate-600 px-3 py-2 flex items-center gap-3 hover:bg-slate-100 transition-all font-medium text-sm rounded" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+                Operations
+            </a>
+<a class="text-slate-600 px-3 py-2 flex items-center gap-3 hover:bg-slate-100 transition-all font-medium text-sm rounded" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+                Compliance
+            </a>
+<a class="bg-white text-slate-900 shadow-sm border border-slate-200 rounded-md px-3 py-2 flex items-center gap-3 transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                System Settings
+            </a>
+</nav>
+<div class="mt-auto flex flex-col gap-1 border-t border-slate-200 pt-4">
+<div class="mb-4 px-3 py-2 bg-surface-container-low rounded-lg text-[10px] uppercase font-bold tracking-widest text-on-secondary-container">
+                Network Health: Stable
+            </div>
+<a class="text-slate-600 px-3 py-2 flex items-center gap-3 hover:bg-slate-100 transition-all font-medium text-sm rounded" href="#">
+<span class="material-symbols-outlined" data-icon="contact_support">contact_support</span>
+                Support
+            </a>
+<a class="text-slate-600 px-3 py-2 flex items-center gap-3 hover:bg-slate-100 transition-all font-medium text-sm rounded" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Log Out
+            </a>
+</div>
+</aside>
+<div class="flex-1 flex flex-col min-w-0">
+<!-- TopNavBar Shell -->
+<header class="flex justify-between items-center w-full px-8 h-16 sticky top-0 z-50 bg-white border-b border-slate-200 font-['Inter'] antialiased tracking-tight">
+<div class="flex items-center">
+<span class="text-xl font-bold text-slate-900 tracking-tighter">RWA Operating System</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="pl-9 pr-4 py-1.5 bg-slate-50 border-none rounded-full text-sm focus:ring-1 focus:ring-primary w-64" placeholder="Quick Search..." type="text"/>
+</div>
+<div class="flex items-center gap-4 border-l border-slate-100 pl-6">
+<button class="text-slate-500 hover:text-slate-900 transition-colors duration-200 active:opacity-70">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-slate-500 hover:text-slate-900 transition-colors duration-200 active:opacity-70">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="text-slate-500 hover:text-slate-900 transition-colors duration-200 active:opacity-70">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-slate-200">
+<img alt="Administrator Profile" class="w-full h-full object-cover" data-alt="Professional male executive headshot with neutral background, clean corporate attire, soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8cwGggDdXjpY3lXtebm4Np0vvHVMTe4JvfiAB8CInDup27S8n8TPuIfstjz5tvMNmc3YzBwZe1wSdSc4urqJqrSVkxDLCyReFdcl54VGiljFQNxIIg2C-P27V9uUci0W5Y-z-O2KsIQo971ar5o4OdZvYFiJIsHjsjn3zlNvVrG-NawTMRYYcR1Ex0IDq1geOVNN6DSZCGbhTR6-JG3uj981S-2mGgUJNRjBtS12dC8Z0OJlWJ3jH7fL4w9kUuEPPEugTPoAKHKA"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 p-8 md:p-12 max-w-7xl mx-auto w-full">
+<!-- Page Header -->
+<header class="mb-12">
+<h1 class="font-headline-xl text-headline-xl text-primary mb-2">Settings</h1>
+<p class="font-body-md text-body-md text-secondary">Configure your institutional instance, manage role-based access, and monitor system-level parameters.</p>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Column: Main Settings Cards -->
+<div class="lg:col-span-8 space-y-8">
+<!-- Section 1: Organization Settings -->
+<section class="bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-[#E2E8F0] overflow-hidden">
+<div class="px-6 py-5 border-b border-[#F1F5F9] flex items-center justify-between">
+<h2 class="font-headline-md text-headline-md text-primary flex items-center gap-3">
+<span class="material-symbols-outlined text-on-secondary-container">domain</span>
+                                Organization Settings
+                            </h2>
+<span class="font-label-sm text-label-sm px-3 py-1 bg-surface-container-high text-primary rounded-full uppercase tracking-widest">Enterprise</span>
+</div>
+<div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-secondary">Organization Name</label>
+<div class="font-body-md text-body-md text-primary font-semibold py-2">Global Asset Custody Ltd.</div>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-secondary">Environment label</label>
+<div class="flex items-center gap-2 py-2">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="font-body-md text-body-md text-primary">Mainnet Production</span>
+</div>
+</div>
+<div class="md:col-span-2 space-y-1">
+<label class="font-label-md text-label-md text-secondary">Support contact</label>
+<div class="font-body-md text-body-md text-primary py-2 border-b border-dashed border-slate-200 inline-block">ops-support@globalasset.io</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Access & Role Settings -->
+<section class="bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-[#E2E8F0] overflow-hidden">
+<div class="px-6 py-5 border-b border-[#F1F5F9]">
+<h2 class="font-headline-md text-headline-md text-primary flex items-center gap-3">
+<span class="material-symbols-outlined text-on-secondary-container">lock</span>
+                                Access &amp; Role Settings
+                            </h2>
+</div>
+<div class="p-0">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-slate-50 border-b border-slate-100">
+<th class="font-label-md text-label-md text-secondary px-6 py-4">Active Role</th>
+<th class="font-label-md text-label-md text-secondary px-6 py-4">Permissions Description</th>
+<th class="font-label-md text-label-md text-secondary px-6 py-4 text-right">Members</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#F1F5F9]">
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-5">
+<div class="font-body-md text-body-md text-primary font-bold">Admin</div>
+</td>
+<td class="px-6 py-5 font-body-sm text-body-sm text-secondary">Full system configuration and user management.</td>
+<td class="px-6 py-5 text-right font-body-sm text-body-sm text-primary">2</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-5">
+<div class="font-body-md text-body-md text-primary font-bold">Operator</div>
+</td>
+<td class="px-6 py-5 font-body-sm text-body-sm text-secondary">Asset minting, burning, and transaction lifecycle management.</td>
+<td class="px-6 py-5 text-right font-body-sm text-body-sm text-primary">8</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-5">
+<div class="font-body-md text-body-md text-primary font-bold">Auditor</div>
+</td>
+<td class="px-6 py-5 font-body-sm text-body-sm text-secondary">Read-only access to all transactions and compliance logs.</td>
+<td class="px-6 py-5 text-right font-body-sm text-body-sm text-primary">4</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-5">
+<div class="font-body-md text-body-md text-primary font-bold">Investor</div>
+</td>
+<td class="px-6 py-5 font-body-sm text-body-sm text-secondary">Portfolio view and individual investment management.</td>
+<td class="px-6 py-5 text-right font-body-sm text-body-sm text-primary">142</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Right Column: System & Security Sidebar -->
+<div class="lg:col-span-4 space-y-8">
+<!-- Section 3: Network & System Settings -->
+<section class="bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-[#E2E8F0] overflow-hidden">
+<div class="px-6 py-5 border-b border-[#F1F5F9]">
+<h2 class="font-headline-md text-headline-md text-primary flex items-center gap-3">
+<span class="material-symbols-outlined text-on-secondary-container">hub</span>
+                                System
+                            </h2>
+</div>
+<div class="p-6 space-y-6">
+<div class="bg-surface-container-low p-4 rounded-lg">
+<label class="font-label-sm text-label-sm text-secondary block mb-2 uppercase tracking-widest">Active network</label>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
+<img alt="Arbitrum Logo" class="w-6 h-6 object-contain" data-alt="Modern abstract geometric logo icon for a blockchain network, vibrant gradients on white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhlMhvteSdtw5gc7T98wkSbxq4gkEAm7WzynZspTNMKK7u6vnO9S_g-2rKrGF8W0P0TLfGpCidP9cNwtwjNdNCAPvdqUlpj61dhd34AA7V6kOfV5hYFCvISl4LznjX9xK-SwPh6u_6JcbpkVLhjaNCaFiht2BvIrQ-KgdV0usCUre160RTi7PS0RamwgYsIUg7EEi1TCJnojr7gu6hDmP4DAVcs3yc_pRKEHHeZbqHbiojCA9DcTRwApI3wGqeU9v2J7VnXetf2-M"/>
+</div>
+<div>
+<p class="font-body-md text-body-md text-primary font-bold">Arbitrum Sepolia</p>
+<p class="font-body-sm text-body-sm text-secondary">L2 Settlement Layer</p>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<span class="font-body-sm text-body-sm text-secondary">System health status</span>
+<span class="font-label-sm text-label-sm bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Operational</span>
+</div>
+<div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+<div class="bg-emerald-500 h-full w-[99.9%]"></div>
+</div>
+<p class="font-body-sm text-body-sm text-secondary italic">Uptime: 99.98% (last 30 days)</p>
+</div>
+</div>
+</section>
+<!-- Section 4: Security Notes -->
+<section class="bg-primary text-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.1)] border border-primary p-6">
+<div class="flex items-start gap-4">
+<div class="bg-white/10 p-2 rounded">
+<span class="material-symbols-outlined text-white" data-weight="fill">security</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-white mb-2" style="font-size: 18px;">Security Notes</h3>
+<div class="space-y-4 opacity-90">
+<p class="font-body-sm text-body-sm">The OS configuration is locked for high-security clearance users only.</p>
+<div class="pt-4 border-t border-white/10">
+<label class="font-label-sm text-label-sm text-white/60 block mb-1 uppercase">Last config update info</label>
+<p class="font-body-sm text-body-sm font-medium">Oct 24, 2023 at 14:22 UTC</p>
+<p class="font-label-sm text-label-sm text-white/60">by Root_Admin_04</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile Navigation Suppressed per "Task-Focused" rule -->
+</body></html>
