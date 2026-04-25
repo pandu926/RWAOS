@@ -227,8 +227,6 @@ export function SearchField({
     >
       <Icon name="search" className="ml-3 size-4 text-muted" />
       <input
-        readOnly
-        value=""
         placeholder={placeholder}
         className="w-full bg-transparent px-3 py-3 text-sm text-foreground outline-none placeholder:text-muted"
       />

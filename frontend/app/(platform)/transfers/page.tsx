@@ -1,20 +1,20 @@
-import { transferTone } from "@/lib/site-data";
 import { getTransfers } from "@/lib/api";
 import { Button, FilterChip, PageHeader, SearchField, SectionCard, StatusBadge, SurfaceTable } from "@/components/ui";
+import { transferTone } from "@/lib/site-data";
 import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function TransfersPage() {
   const transfers = await getTransfers();
-  const confirmed = transfers.filter((transfer) => transfer.status === "Confirmed").length;
-  const pending = transfers.filter((transfer) =>
-    transfer.status === "Pending" || transfer.status === "Submitted",
-  ).length;
-  const rejected = transfers.filter((transfer) => transfer.status === "Rejected").length;
-  const visibleVolume = transfers
-    .filter((transfer) => transfer.status === "Confirmed")
-    .reduce((sum, transfer) => sum + transfer.amount, 0);
+  const totalTransfers = transfers.length;
+  const uniqueAssets = new Set(transfers.map((transfer) => transfer.assetId)).size;
+  const uniqueParticipants = new Set(
+    transfers
+      .flatMap((transfer) => [transfer.from, transfer.to])
+      .filter((value) => value && value !== "N/A"),
+  ).size;
+  const totalVolume = transfers.reduce((sum, transfer) => sum + transfer.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -24,7 +24,7 @@ export default async function TransfersPage() {
         description="Confidential transfer history with consistent visibility labels, giving operators and auditors clear context for each event."
         actions={
           <>
-            <Button variant="secondary">Export log</Button>
+            <Button variant="secondary" href="/api/exports/transfers">Export log</Button>
             <Button href="/transfers/new">New transfer</Button>
           </>
         }
@@ -32,22 +32,22 @@ export default async function TransfersPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SectionCard title="Confirmed">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{confirmed}</p>
-          <p className="mt-2 text-sm text-muted">Settled successfully</p>
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{totalTransfers}</p>
+          <p className="mt-2 text-sm text-muted">Total recorded transfers</p>
         </SectionCard>
         <SectionCard title="Pending">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{pending}</p>
-          <p className="mt-2 text-sm text-muted">Need operator or chain confirmation</p>
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{uniqueAssets}</p>
+          <p className="mt-2 text-sm text-muted">Unique assets referenced</p>
         </SectionCard>
         <SectionCard title="Rejected">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{rejected}</p>
-          <p className="mt-2 text-sm text-muted">Blocked by compliance or access policy</p>
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{uniqueParticipants}</p>
+          <p className="mt-2 text-sm text-muted">Unique participants (from/to)</p>
         </SectionCard>
         <SectionCard title="Visible confirmed volume">
           <p className="text-3xl font-semibold tracking-tight text-foreground">
-            {formatCurrency(visibleVolume)}
+            {formatCurrency(totalVolume)}
           </p>
-          <p className="mt-2 text-sm text-muted">Authorized aggregate view only</p>
+          <p className="mt-2 text-sm text-muted">Total transferred amount</p>
         </SectionCard>
       </div>
 
@@ -91,7 +91,9 @@ export default async function TransfersPage() {
                   {formatCurrency(transfer.amount)}
                 </td>
                 <td className="px-6 py-5">
-                  <StatusBadge tone="accent">{transfer.amountVisibility}</StatusBadge>
+                  <StatusBadge tone={transfer.amountVisibility === "Hidden" ? "warning" : "neutral"}>
+                    {transfer.amountVisibility}
+                  </StatusBadge>
                 </td>
                 <td className="px-6 py-5">
                   <StatusBadge tone={transferTone(transfer.status)}>{transfer.status}</StatusBadge>

@@ -1,45 +1,48 @@
-import { disclosureTone } from "@/lib/site-data";
 import { getDisclosures } from "@/lib/api";
 import { Button, FilterChip, InlineNotice, PageHeader, SearchField, SectionCard, StatusBadge, SurfaceTable } from "@/components/ui";
+import { disclosureTone } from "@/lib/site-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function DisclosuresPage() {
   const disclosures = await getDisclosures();
-  const active = disclosures.filter((item) => item.status === "Active").length;
-  const revoked = disclosures.filter((item) => item.status === "Revoked").length;
+  const totalDisclosures = disclosures.length;
   const assetsCovered = new Set(disclosures.map((item) => item.assetId)).size;
+  const uniqueGrantees = new Set(disclosures.map((item) => item.grantee)).size;
+  const activeDisclosures = disclosures.filter((item) => item.status === "Active").length;
+  const expiredDisclosures = disclosures.filter((item) => item.status === "Expired").length;
+  const noExpiryDisclosures = disclosures.filter((item) => item.expiresAt === "No expiry").length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Access governance"
         title="Disclosures"
-        description="Manage grant and revoke access to sensitive data using consistent terminology, status semantics, and information architecture across operational pages."
+        description={`Manage grant and revoke access to sensitive data across ${totalDisclosures} disclosure records with consistent terminology and status semantics.`}
         actions={
           <>
-            <Button variant="secondary">Export grants</Button>
-            <Button>Grant access</Button>
+            <Button variant="secondary" href="/api/exports/disclosures">Export grants</Button>
+            <Button href="/disclosures/new">Grant access</Button>
           </>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SectionCard title="Active grants">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{active}</p>
-          <p className="mt-2 text-sm text-muted">Currently visible to grantees</p>
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{activeDisclosures}</p>
+          <p className="mt-2 text-sm text-muted">Currently active disclosure grants</p>
         </SectionCard>
         <SectionCard title="Assets covered">
           <p className="text-3xl font-semibold tracking-tight text-foreground">{assetsCovered}</p>
           <p className="mt-2 text-sm text-muted">Mapped to disclosure scopes</p>
         </SectionCard>
-        <SectionCard title="Revoked">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{revoked}</p>
-          <p className="mt-2 text-sm text-muted">No longer active</p>
+        <SectionCard title="Unique grantees">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{uniqueGrantees}</p>
+          <p className="mt-2 text-sm text-muted">Distinct grantees across disclosure records</p>
         </SectionCard>
-        <SectionCard title="Recent changes">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">3</p>
-          <p className="mt-2 text-sm text-muted">Last 24 hours</p>
+        <SectionCard title="Expired or open-ended">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{expiredDisclosures}</p>
+          <p className="mt-2 text-sm text-muted">{noExpiryDisclosures} grants have no expiry</p>
         </SectionCard>
       </div>
 
@@ -69,7 +72,7 @@ export default async function DisclosuresPage() {
               <th className="px-6 py-4">Asset</th>
               <th className="px-6 py-4">Scope</th>
               <th className="px-6 py-4">Granted by</th>
-              <th className="px-6 py-4">Granted at</th>
+              <th className="px-6 py-4">Expires at</th>
               <th className="px-6 py-4">Status</th>
             </tr>
           </thead>
@@ -83,7 +86,7 @@ export default async function DisclosuresPage() {
                 <td className="px-6 py-5 text-sm text-foreground">{item.assetName}</td>
                 <td className="px-6 py-5 text-sm text-foreground">{item.scope}</td>
                 <td className="px-6 py-5 text-sm text-foreground">{item.grantedBy}</td>
-                <td className="px-6 py-5 text-sm text-foreground">{item.grantedAt}</td>
+                <td className="px-6 py-5 text-sm text-foreground">{item.expiresAt}</td>
                 <td className="px-6 py-5">
                   <StatusBadge tone={disclosureTone(item.status)}>{item.status}</StatusBadge>
                 </td>

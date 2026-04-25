@@ -28,8 +28,16 @@ export async function POST(request: Request) {
     );
   }
 
+  let backendBaseUrl = "";
   try {
-    const response = await fetch(`${getBackendBaseUrl()}/auth/wallet/login`, {
+    backendBaseUrl = getBackendBaseUrl();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Backend API base URL is not configured.";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  }
+
+  try {
+    const response = await fetch(`${backendBaseUrl}/auth/wallet/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),

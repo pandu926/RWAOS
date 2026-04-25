@@ -25,6 +25,7 @@ export default async function CompliancePassportsPage() {
   const passports = await getCompliancePassports();
   const anchored = passports.filter((item) => item.status === "Anchored").length;
   const disclosed = passports.filter((item) => item.status === "Disclosed to Authorized").length;
+  const confidential = passports.filter((item) => item.status === "Confidential").length;
 
   return (
     <div className="space-y-6">
@@ -32,10 +33,11 @@ export default async function CompliancePassportsPage() {
         eyebrow="Compliance Passport"
         title="Passports"
         description="Selective disclosure proofs for confidential transfers. Public ledger keeps privacy while authorized parties get verifiable evidence."
-        actions={<Button variant="secondary">Issue passport</Button>}
+        meta={<StatusBadge tone="accent">{session.address ? shortenAddress(session.address) : session.role}</StatusBadge>}
+        actions={<Button variant="secondary" href="/compliance/passports/new">Issue passport</Button>}
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <SectionCard title="Total passports">
           <p className="text-3xl font-semibold tracking-tight text-foreground">{passports.length}</p>
           <p className="mt-2 text-sm text-muted">Transfer-linked compliance records</p>
@@ -47,6 +49,10 @@ export default async function CompliancePassportsPage() {
         <SectionCard title="Disclosed to authorized">
           <p className="text-3xl font-semibold tracking-tight text-foreground">{disclosed}</p>
           <p className="mt-2 text-sm text-muted">Scoped disclosure active</p>
+        </SectionCard>
+        <SectionCard title="Confidential">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{confidential}</p>
+          <p className="mt-2 text-sm text-muted">Anchored but not yet openly disclosed</p>
         </SectionCard>
       </div>
 
@@ -72,9 +78,18 @@ export default async function CompliancePassportsPage() {
                   >
                     {passport.id}
                   </Link>
-                  <p className="mt-1 text-xs text-muted">{passport.createdAt}</p>
+                  <p className="mt-1 text-xs text-muted">
+                    {passport.transferIdOnchain ? shortenAddress(passport.transferIdOnchain) : passport.createdAt}
+                  </p>
                 </td>
-                <td className="px-6 py-5 text-sm text-foreground">{passport.transferId}</td>
+                <td className="px-6 py-5 text-sm text-foreground">
+                  <p>{passport.transferId}</p>
+                  <p className="mt-1 text-xs text-muted">
+                    {passport.disclosureScope.length > 0
+                      ? `Scope: ${passport.disclosureScope.join(", ")}`
+                      : "Scope not recorded"}
+                  </p>
+                </td>
                 <td className="px-6 py-5 font-mono text-xs text-muted">{shortenAddress(passport.policyHash)}</td>
                 <td className="px-6 py-5 font-mono text-xs text-muted">{shortenAddress(passport.anchorHash)}</td>
                 <td className="px-6 py-5">
@@ -82,6 +97,9 @@ export default async function CompliancePassportsPage() {
                 </td>
                 <td className="px-6 py-5 text-sm text-foreground">
                   {passport.createdBy} ({passport.createdByRole})
+                  <p className="mt-1 text-xs text-muted">
+                    {passport.reason || `Last accessed ${passport.lastAccessedAt}`}
+                  </p>
                 </td>
               </tr>
             ))}

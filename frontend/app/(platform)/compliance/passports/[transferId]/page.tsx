@@ -12,13 +12,16 @@ type ApiEnvelope<T> = {
 };
 
 type PassportDetail = {
-  transfer_id: number;
+  transfer_record_id: number;
+  transfer_id_onchain?: string | null;
   policy_hash: string;
   disclosure_data_id: string;
   anchor_hash: string;
   status: string;
   transfer_tx_hash: string;
   anchor_tx_hash: string;
+  disclosure_scope?: string;
+  reason?: string;
   created_by: string;
   created_by_role: string;
   created_at_unix: number;
@@ -90,7 +93,7 @@ export default async function PassportDetailPage({
     <div className="space-y-6">
       <PageHeader
         eyebrow="Compliance Passport Detail"
-        title={`Transfer #${detail.transfer_id}`}
+        title={`Transfer #${detail.transfer_record_id}`}
         description="Role-scoped detail view for selective disclosure and audit references."
         meta={<StatusBadge tone={tone(detail.status)}>{detail.status}</StatusBadge>}
       />
@@ -98,6 +101,10 @@ export default async function PassportDetailPage({
       <div className="grid gap-6 xl:grid-cols-2">
         <SectionCard title="Core references">
           <dl className="space-y-4 text-sm">
+            <div>
+              <dt className="text-xs uppercase tracking-[0.16em] text-muted">Transfer ID on-chain</dt>
+              <dd className="mt-1 font-mono text-foreground">{detail.transfer_id_onchain ?? "Not recorded"}</dd>
+            </div>
             <div>
               <dt className="text-xs uppercase tracking-[0.16em] text-muted">Policy hash</dt>
               <dd className="mt-1 font-mono text-foreground">{detail.policy_hash}</dd>
@@ -128,6 +135,14 @@ export default async function PassportDetailPage({
               <dd className="mt-1 text-foreground">
                 {detail.created_by} ({detail.created_by_role})
               </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-[0.16em] text-muted">Disclosure scope</dt>
+              <dd className="mt-1 text-foreground">{detail.disclosure_scope ?? "N/A"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-[0.16em] text-muted">Reason</dt>
+              <dd className="mt-1 text-foreground">{detail.reason ?? "N/A"}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-[0.16em] text-muted">Last accessed</dt>

@@ -23,7 +23,7 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/rwaos_backend
       BACKEND_PORT: "8080"
-      AUTH_ADMIN_WALLETS: "0xf21b5742477a5e065ef86dedba40b34527ac93fd"
+      AUTH_ADMIN_WALLETS: "0xf21b5742477a5e065ef86dedba40b34527ac93fd,0xEc08da877d409293C006523DB95BA291f43E3249"
       AUTH_OPERATOR_WALLETS: ""
       AUTH_AUDITOR_WALLETS: ""
     depends_on:

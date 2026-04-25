@@ -25,6 +25,7 @@ type BackendInvestor = {
   id: number;
   legal_name: string;
   jurisdiction: string;
+  wallet_address?: string | null;
 };
 
 type BackendTransfer = {
@@ -33,6 +34,7 @@ type BackendTransfer = {
   from_investor_id: number;
   to_investor_id: number;
   amount: number;
+  tx_hash?: string | null;
 };
 
 type BackendDisclosure = {
@@ -40,6 +42,10 @@ type BackendDisclosure = {
   asset_id: number;
   title: string;
   content: string;
+  data_id?: string | null;
+  grantee?: string | null;
+  expires_at?: number | null;
+  tx_hash?: string | null;
 };
 
 type BackendAuditEvent = {
@@ -51,13 +57,16 @@ type BackendAuditEvent = {
 
 type BackendCompliancePassport = {
   id: number;
-  transfer_id: number;
+  transfer_record_id: number;
+  transfer_id_onchain?: string | null;
   policy_hash: string;
   disclosure_data_id: string;
   anchor_hash: string;
   status: string;
   transfer_tx_hash: string;
   anchor_tx_hash: string;
+  disclosure_scope?: string;
+  reason?: string;
   created_by: string;
   created_by_role: string;
   created_at_unix: number;
@@ -106,6 +115,20 @@ function formatUtcFromUnix(timestampUnix: number): string {
   return new Date(timestampUnix * 1000).toISOString().replace("T", " ").replace(".000Z", " UTC");
 }
 
+function hasWalletAddress(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function describeTransferActivity(count: number): string {
+  if (count <= 0) {
+    return "No transfer activity yet";
+  }
+  if (count === 1) {
+    return "1 transfer record";
+  }
+  return `${count} transfer records`;
+}
+
 async function fetchApiList<T>(path: string): Promise<T[] | null> {
   const baseUrl = getApiBaseUrl();
   if (!baseUrl) {
@@ -139,19 +162,26 @@ async function fetchApiList<T>(path: string): Promise<T[] | null> {
 }
 
 function mapAsset(item: BackendAsset): Asset {
+  const derivedSymbol = item.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("")
+    .slice(0, 6) || `AST${item.id}`;
+
   return {
     id: `asset-${item.id}`,
     name: item.name,
-    symbol: `AST-${item.id}`,
+    symbol: derivedSymbol,
     type: item.asset_type,
     status: "Active",
-    issuer: "Backend registry",
-    jurisdiction: "Not specified",
+    issuer: "Confidential issuer registry",
+    jurisdiction: "Arbitrum Sepolia",
     holdersCount: 0,
     confidentialAum: 0,
     yield: 0,
-    lastActivity: "Live API",
-    description: `Asset type: ${item.asset_type}.`,
+    lastActivity: "Registry synced",
+    description: item.asset_type ? `Asset type: ${item.asset_type}.` : "Asset awaiting type classification.",
   };
 }
 
@@ -159,61 +189,95 @@ function mapInvestor(item: BackendInvestor): Investor {
   return {
     id: `investor-${item.id}`,
     name: item.legal_name,
-    address: `investor-${item.id}`,
+    address: item.wallet_address || "Wallet not mapped",
     role: item.jurisdiction,
-    whitelistStatus: "Verified",
+    whitelistStatus: hasWalletAddress(item.wallet_address) ? "Verified" : "Pending review",
     assetsCount: 0,
     allocation: 0,
-    lastActivity: "Live API",
+    lastActivity: hasWalletAddress(item.wallet_address) ? "Wallet mapped" : "Awaiting wallet mapping",
   };
 }
 
-function mapTransfer(item: BackendTransfer): Transfer {
+function mapTransfer(
+  item: BackendTransfer,
+  context: {
+    assetNameById: Map<number, string>;
+    investorById: Map<number, BackendInvestor>;
+  },
+): Transfer {
+  const assetName = context.assetNameById.get(item.asset_id) ?? `Asset ${item.asset_id}`;
+  const fromInvestor = context.investorById.get(item.from_investor_id);
+  const toInvestor = context.investorById.get(item.to_investor_id);
+  const fromLabel = fromInvestor?.wallet_address || fromInvestor?.legal_name || `Investor ${item.from_investor_id}`;
+  const toLabel = toInvestor?.wallet_address || toInvestor?.legal_name || `Investor ${item.to_investor_id}`;
+
   return {
     id: `TRF-${item.id}`,
     assetId: `asset-${item.asset_id}`,
-    assetName: `Asset #${item.asset_id}`,
-    from: `Investor #${item.from_investor_id}`,
-    to: `Investor #${item.to_investor_id}`,
+    assetName,
+    from: fromLabel,
+    to: toLabel,
     amount: item.amount,
-    amountVisibility: "Visible to authorized users only",
-    status: "Confirmed",
-    submittedAt: "Live API",
-    reference: `Transfer #${item.id}`,
+    amountVisibility: item.tx_hash ? "Restricted" : "Hidden",
+    status: item.tx_hash ? "Confirmed" : "Pending",
+    submittedAt: item.tx_hash || "Awaiting on-chain hash",
+    reference: item.tx_hash || `Transfer ${item.id}`,
   };
 }
 
-function mapDisclosure(item: BackendDisclosure): Disclosure {
+function mapDisclosure(
+  item: BackendDisclosure,
+  context: {
+    assetNameById: Map<number, string>;
+  },
+): Disclosure {
+  const nowUnix = Math.floor(Date.now() / 1000);
+  const status: Disclosure["status"] =
+    item.expires_at && item.expires_at < nowUnix ? "Expired" : "Active";
+
   return {
     id: `DCL-${item.id}`,
-    grantee: item.title,
-    granteeAddress: "Live API",
+    grantee: item.grantee || item.title,
+    granteeAddress: item.grantee || "Grantee not recorded",
     assetId: `asset-${item.asset_id}`,
-    assetName: `Asset #${item.asset_id}`,
-    scope: item.content,
-    grantedBy: "Backend API",
-    grantedAt: "Live API",
-    status: "Active",
+    assetName: context.assetNameById.get(item.asset_id) ?? `Asset ${item.asset_id}`,
+    scope: item.data_id || item.content,
+    grantedBy: item.tx_hash || "Pending on-chain tx",
+    expiresAt: item.expires_at ? formatUtcFromUnix(item.expires_at) : "No expiry",
+    status,
   };
 }
 
 function mapAuditEvent(item: BackendAuditEvent): AuditEvent {
+  const targetFromAction = item.action
+    .split("_")
+    .filter(Boolean)
+    .join(" ");
+
   return {
     id: `AUD-${item.id}`,
     eventType: item.action,
     actor: item.actor,
-    target: "Backend API event",
-    visibility: "Visible to authorized users only",
-    result: "Verified",
+    target: targetFromAction || "Registry event",
+    visibility: "Restricted",
+    result: item.action.startsWith("create_") ? "Verified" : "Review required",
     timestamp: formatUtcFromUnix(item.timestamp_unix),
-    reference: `Event #${item.id}`,
+    reference: `Event ${item.id}`,
   };
 }
 
 function mapCompliancePassport(item: BackendCompliancePassport): CompliancePassport {
+  const normalizedScope = item.disclosure_scope
+    ? item.disclosure_scope
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    : [];
+
   return {
     id: `PAS-${item.id}`,
-    transferId: `TRF-${item.transfer_id}`,
+    transferId: `TRF-${item.transfer_record_id}`,
+    transferIdOnchain: item.transfer_id_onchain ?? null,
     status:
       item.status === "Anchored" || item.status === "Disclosed to Authorized"
         ? item.status
@@ -223,6 +287,8 @@ function mapCompliancePassport(item: BackendCompliancePassport): CompliancePassp
     anchorHash: item.anchor_hash,
     transferTxHash: item.transfer_tx_hash,
     anchorTxHash: item.anchor_tx_hash,
+    disclosureScope: normalizedScope,
+    reason: item.reason ?? null,
     createdBy: item.created_by,
     createdByRole: item.created_by_role,
     createdAt: formatUtcFromUnix(item.created_at_unix),
@@ -231,35 +297,115 @@ function mapCompliancePassport(item: BackendCompliancePassport): CompliancePassp
 }
 
 export async function getAssets(): Promise<Asset[]> {
-  const apiItems = await fetchApiList<BackendAsset>("/assets");
-  if (!apiItems) {
+  const [assetItems, transferItems, disclosureItems] = await Promise.all([
+    fetchApiList<BackendAsset>("/assets"),
+    fetchApiList<BackendTransfer>("/transfers"),
+    fetchApiList<BackendDisclosure>("/disclosures"),
+  ]);
+
+  if (!assetItems) {
     return [];
   }
-  return apiItems.map(mapAsset);
+
+  return assetItems.map((item) => {
+    const transferMatches = (transferItems ?? []).filter((transfer) => transfer.asset_id === item.id);
+    const disclosureMatches = (disclosureItems ?? []).filter((disclosure) => disclosure.asset_id === item.id);
+    const holdersCount = new Set(
+      transferMatches.flatMap((transfer) => [transfer.from_investor_id, transfer.to_investor_id]),
+    ).size;
+    const confidentialAum = transferMatches.reduce((sum, transfer) => sum + transfer.amount, 0);
+    const lastActivity = transferMatches.length > 0
+      ? `${transferMatches.length} tracked transfer${transferMatches.length === 1 ? "" : "s"}`
+      : disclosureMatches.length > 0
+        ? `${disclosureMatches.length} disclosure${disclosureMatches.length === 1 ? "" : "s"} active`
+        : "Awaiting first operational event";
+
+    return {
+      ...mapAsset(item),
+      holdersCount,
+      confidentialAum,
+      lastActivity,
+      status: disclosureMatches.some((disclosure) => disclosure.tx_hash)
+        ? "Active"
+        : transferMatches.length > 0
+          ? "Restricted"
+          : "Paused",
+    };
+  });
 }
 
 export async function getInvestors(): Promise<Investor[]> {
-  const apiItems = await fetchApiList<BackendInvestor>("/investors");
-  if (!apiItems) {
+  const [investorItems, transferItems] = await Promise.all([
+    fetchApiList<BackendInvestor>("/investors"),
+    fetchApiList<BackendTransfer>("/transfers"),
+  ]);
+
+  if (!investorItems) {
     return [];
   }
-  return apiItems.map(mapInvestor);
+
+  return investorItems.map((item) => {
+    const relatedTransfers = (transferItems ?? []).filter(
+      (transfer) =>
+        transfer.from_investor_id === item.id || transfer.to_investor_id === item.id,
+    );
+    const relatedAssets = new Set(relatedTransfers.map((transfer) => transfer.asset_id));
+    const allocation = relatedTransfers.reduce((sum, transfer) => sum + transfer.amount, 0);
+
+    return {
+      ...mapInvestor(item),
+      assetsCount: relatedAssets.size,
+      allocation,
+      lastActivity: describeTransferActivity(relatedTransfers.length),
+    };
+  });
 }
 
 export async function getTransfers(): Promise<Transfer[]> {
-  const apiItems = await fetchApiList<BackendTransfer>("/transfers");
-  if (!apiItems) {
+  const [transferItems, assetItems, investorItems] = await Promise.all([
+    fetchApiList<BackendTransfer>("/transfers"),
+    fetchApiList<BackendAsset>("/assets"),
+    fetchApiList<BackendInvestor>("/investors"),
+  ]);
+
+  if (!transferItems) {
     return [];
   }
-  return apiItems.map(mapTransfer);
+
+  const assetNameById = new Map<number, string>(
+    (assetItems ?? []).map((item) => [item.id, item.name]),
+  );
+  const investorById = new Map<number, BackendInvestor>(
+    (investorItems ?? []).map((item) => [item.id, item]),
+  );
+
+  return transferItems.map((item) =>
+    mapTransfer(item, {
+      assetNameById,
+      investorById,
+    }),
+  );
 }
 
 export async function getDisclosures(): Promise<Disclosure[]> {
-  const apiItems = await fetchApiList<BackendDisclosure>("/disclosures");
-  if (!apiItems) {
+  const [disclosureItems, assetItems] = await Promise.all([
+    fetchApiList<BackendDisclosure>("/disclosures"),
+    fetchApiList<BackendAsset>("/assets"),
+  ]);
+
+  if (!disclosureItems) {
     return [];
   }
-  return apiItems.map(mapDisclosure);
+
+  const assetNameById = new Map<number, string>(
+    (assetItems ?? []).map((item) => [item.id, item.name]),
+  );
+
+  return disclosureItems.map((item) =>
+    mapDisclosure(item, {
+      assetNameById,
+    }),
+  );
 }
 
 export async function getAuditEvents(): Promise<AuditEvent[]> {
@@ -303,16 +449,16 @@ export async function getDashboardData(): Promise<DashboardData> {
       icon: "users",
     },
     {
-      title: "Confidential transfer volume",
+      title: "Transfer volume",
       value: `$${transfers.reduce((sum, transfer) => sum + transfer.amount, 0).toLocaleString()}`,
-      detail: "Aggregated from transfer records",
+      detail: "From recorded transfer amounts",
       tone: "accent",
       icon: "wallet",
     },
     {
-      title: "Open compliance actions",
-      value: `${disclosures.filter((item) => item.status !== "Revoked").length}`,
-      detail: "Derived from disclosures",
+      title: "Audit events",
+      value: `${auditEvents.length}`,
+      detail: "From audit event stream",
       tone: "warning",
       icon: "shield",
     },

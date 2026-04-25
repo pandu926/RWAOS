@@ -1,14 +1,15 @@
-import { auditTone } from "@/lib/site-data";
 import { getAuditEvents } from "@/lib/api";
+import { auditTone } from "@/lib/site-data";
 import { Button, FilterChip, InlineNotice, PageHeader, SearchField, SectionCard, StatusBadge, SurfaceTable } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function AuditPage() {
   const auditEvents = await getAuditEvents();
-  const verified = auditEvents.filter((item) => item.result === "Verified").length;
-  const reviewRequired = auditEvents.filter((item) => item.result === "Review required").length;
-  const rejected = auditEvents.filter((item) => item.result === "Rejected").length;
+  const totalEvents = auditEvents.length;
+  const uniqueActors = new Set(auditEvents.map((item) => item.actor)).size;
+  const uniqueActions = new Set(auditEvents.map((item) => item.eventType)).size;
+  const latestEventAt = auditEvents.at(-1)?.timestamp ?? "No audit events yet";
 
   return (
     <div className="space-y-6">
@@ -18,28 +19,28 @@ export default async function AuditPage() {
         description="Operational audit trail that remains readable for auditors without compromising the product’s confidentiality model."
         actions={
           <>
-            <Button variant="secondary">Export evidence</Button>
-            <Button>Verify bundle</Button>
+            <Button variant="secondary" href="/api/exports/audit">Export evidence</Button>
+            <Button href="/compliance/passports">Verify bundle</Button>
           </>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SectionCard title="Verified">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{verified}</p>
-          <p className="mt-2 text-sm text-muted">Proofs that passed validation</p>
+        <SectionCard title="Total events">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{totalEvents}</p>
+          <p className="mt-2 text-sm text-muted">Total events from backend</p>
         </SectionCard>
-        <SectionCard title="Review required">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{reviewRequired}</p>
-          <p className="mt-2 text-sm text-muted">Need operator or auditor attention</p>
+        <SectionCard title="Actors">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{uniqueActors}</p>
+          <p className="mt-2 text-sm text-muted">Unique actors recorded</p>
         </SectionCard>
-        <SectionCard title="Rejected">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{rejected}</p>
-          <p className="mt-2 text-sm text-muted">Policy or integrity mismatch</p>
+        <SectionCard title="Event types">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{uniqueActions}</p>
+          <p className="mt-2 text-sm text-muted">Unique event actions</p>
         </SectionCard>
         <SectionCard title="Proof freshness">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">4m</p>
-          <p className="mt-2 text-sm text-muted">Last bundle update latency</p>
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{latestEventAt}</p>
+          <p className="mt-2 text-sm text-muted">Most recent event timestamp</p>
         </SectionCard>
       </div>
 
@@ -81,15 +82,15 @@ export default async function AuditPage() {
                     <p className="mt-1 text-xs text-muted">{item.timestamp}</p>
                   </td>
                   <td className="px-6 py-5 text-sm text-foreground">{item.actor}</td>
-                  <td className="px-6 py-5 text-sm text-foreground">{item.target}</td>
-                  <td className="px-6 py-5">
-                    <StatusBadge tone="accent">{item.visibility}</StatusBadge>
-                  </td>
-                  <td className="px-6 py-5">
-                    <StatusBadge tone={auditTone(item.result)}>{item.result}</StatusBadge>
-                  </td>
-                </tr>
-              ))}
+                <td className="px-6 py-5 text-sm text-foreground">{item.target}</td>
+                <td className="px-6 py-5">
+                  <StatusBadge tone="neutral">{item.visibility}</StatusBadge>
+                </td>
+                <td className="px-6 py-5">
+                  <StatusBadge tone={auditTone(item.result)}>{item.result}</StatusBadge>
+                </td>
+              </tr>
+            ))}
             </tbody>
           </table>
         </SurfaceTable>

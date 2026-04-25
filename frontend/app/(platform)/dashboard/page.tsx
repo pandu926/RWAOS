@@ -1,10 +1,7 @@
-import {
-  organization,
-  transferTone,
-} from "@/lib/site-data";
 import { getDashboardData } from "@/lib/api";
 import { Icon } from "@/components/icons";
 import { Button, InlineNotice, PageHeader, SectionCard, StatCard, StatusBadge, SurfaceTable } from "@/components/ui";
+import { auditTone, transferTone } from "@/lib/site-data";
 import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +13,13 @@ export default async function DashboardPage() {
     transfers,
     auditEvents,
   } = await getDashboardData();
+  const hasLiveData = transfers.length > 0 || auditEvents.length > 0;
+  const healthStatus = hasLiveData
+    ? "Live data"
+    : "No records";
+  const latestAuditAt = auditEvents.at(-1)?.timestamp ?? "No audit events yet";
+  const uniqueTransferAssets = new Set(transfers.map((item) => item.assetId)).size;
+  const uniqueAuditActors = new Set(auditEvents.map((item) => item.actor)).size;
 
   return (
     <div className="space-y-6">
@@ -23,7 +27,7 @@ export default async function DashboardPage() {
         eyebrow="Operations overview"
         title="Dashboard"
         description="Operational summary for confidential assets, active transfers, disclosure scope, and the organization’s audit posture."
-        meta={<StatusBadge tone="success">{organization.healthStatus}</StatusBadge>}
+        meta={<StatusBadge tone={healthStatus === "Live data" ? "success" : "warning"}>{healthStatus}</StatusBadge>}
         actions={
           <>
             <Button href="/disclosures" variant="secondary">
@@ -35,9 +39,9 @@ export default async function DashboardPage() {
       />
 
       <InlineNotice
-        title="Action required"
-        description="Three assets require disclosure updates before the next transfer window. This shell keeps operational queues and supporting evidence in one workspace."
-        tone="warning"
+        title="Live backend snapshot"
+        description={`Transfers: ${transfers.length}. Audit events: ${auditEvents.length}. Latest audit timestamp: ${latestAuditAt}.`}
+        tone="neutral"
         icon="alert"
       />
 
@@ -73,26 +77,25 @@ export default async function DashboardPage() {
           <div className="space-y-5">
             <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
-                Weekly audit package
+                Data readiness
               </p>
-              <p className="mt-3 text-3xl font-semibold">Ready</p>
+              <p className="mt-3 text-3xl font-semibold">{healthStatus}</p>
               <p className="mt-2 text-sm leading-6 text-white/72">
-                The evidence bundle is complete for transfer confirmation, disclosure updates,
-                and role review.
+                Snapshot derived from currently reachable backend endpoints without client-side fabrication.
               </p>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between rounded-2xl border border-border bg-surface-soft px-4 py-3">
-                <span className="text-sm text-muted">Disclosure expiry today</span>
-                <StatusBadge tone="warning">2 scopes</StatusBadge>
+                <span className="text-sm text-muted">Assets represented in transfers</span>
+                <StatusBadge tone="accent">{uniqueTransferAssets}</StatusBadge>
               </div>
               <div className="flex items-center justify-between rounded-2xl border border-border bg-surface-soft px-4 py-3">
-                <span className="text-sm text-muted">Pending credential refresh</span>
-                <StatusBadge tone="danger">1 wallet</StatusBadge>
+                <span className="text-sm text-muted">Unique audit actors</span>
+                <StatusBadge tone="neutral">{uniqueAuditActors}</StatusBadge>
               </div>
               <div className="flex items-center justify-between rounded-2xl border border-border bg-surface-soft px-4 py-3">
-                <span className="text-sm text-muted">Confirmed transfer batch</span>
-                <StatusBadge tone="success">12 items</StatusBadge>
+                <span className="text-sm text-muted">Latest audit event</span>
+                <StatusBadge tone="neutral">{latestAuditAt}</StatusBadge>
               </div>
             </div>
           </div>
@@ -123,7 +126,7 @@ export default async function DashboardPage() {
                     {formatCurrency(transfer.amount)}
                   </td>
                   <td className="px-6 py-4">
-                    <StatusBadge tone="accent">{transfer.amountVisibility}</StatusBadge>
+                    <StatusBadge tone="neutral">{transfer.amountVisibility}</StatusBadge>
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge tone={transferTone(transfer.status)}>{transfer.status}</StatusBadge>
@@ -143,9 +146,7 @@ export default async function DashboardPage() {
                     <p className="text-sm font-semibold text-foreground">{event.eventType}</p>
                     <p className="text-xs text-muted">{event.target}</p>
                   </div>
-                  <StatusBadge tone={event.result === "Verified" ? "success" : "warning"}>
-                    {event.result}
-                  </StatusBadge>
+                  <StatusBadge tone={auditTone(event.result)}>{event.result}</StatusBadge>
                 </div>
                 <p className="mt-3 text-xs text-muted">
                   {event.actor} • {event.timestamp}

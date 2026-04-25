@@ -1,10 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use axum::{
-    Json, Router,
-    extract::State,
-    routing::get,
-};
+use axum::{Json, Router, extract::State, routing::get};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
 
@@ -86,6 +82,8 @@ pub fn routes(state: AppState) -> Router {
 async fn list_events(State(state): State<AppState>) -> Json<ApiEnvelope<Vec<AuditEvent>>> {
     match state.audit_repo.list().await {
         Ok(items) => Json(ApiEnvelope::ok(items)),
-        Err(err) => Json(ApiEnvelope::err(format!("failed to list audit events: {err}"))),
+        Err(err) => Json(ApiEnvelope::err(format!(
+            "failed to list audit events: {err}"
+        ))),
     }
 }

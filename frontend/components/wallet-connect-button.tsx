@@ -1,7 +1,9 @@
 "use client";
 
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useAccount, useDisconnect, useSignMessage, useSwitchChain } from "wagmi";
 
 import { Button } from "@/components/ui";
 import {
@@ -15,7 +17,7 @@ import {
 const TARGET_CHAIN_ID = 421614;
 const TARGET_CHAIN_HEX = "0x66eee";
 
-type EthereumProvider = {
+type Eip1193Provider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
 };
 
@@ -31,51 +33,22 @@ type WalletLoginEnvelope = {
   error?: string | null;
 };
 
-function getEthereum(): EthereumProvider | null {
+function getProvider(): Eip1193Provider | null {
   if (typeof window === "undefined") {
     return null;
   }
-
-  return (window as Window & { ethereum?: EthereumProvider }).ethereum ?? null;
+  return (window as Window & { ethereum?: Eip1193Provider }).ethereum ?? null;
 }
 
-async function ensureTargetChain(ethereum: EthereumProvider): Promise<void> {
-  const chainIdHex = (await ethereum.request({ method: "eth_chainId" })) as string;
-  const currentChainId = Number.parseInt(chainIdHex, 16);
-
-  if (currentChainId === TARGET_CHAIN_ID) {
-    return;
+function getReadableError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
   }
-
-  await ethereum.request({
-    method: "wallet_switchEthereumChain",
-    params: [{ chainId: TARGET_CHAIN_HEX }],
-  });
-}
-
-async function requestConnectedAddress(ethereum: EthereumProvider): Promise<string> {
-  const accounts = (await ethereum.request({
-    method: "eth_requestAccounts",
-  })) as string[];
-
-  if (!Array.isArray(accounts) || accounts.length === 0) {
-    throw new Error("Wallet did not return an address.");
+  if (typeof error === "object" && error !== null) {
+    const maybe = error as { shortMessage?: string; details?: string; message?: string };
+    return maybe.shortMessage || maybe.details || maybe.message || "Failed to connect wallet.";
   }
-
-  return accounts[0]!;
-}
-
-async function signLoginMessage(ethereum: EthereumProvider, address: string, message: string): Promise<string> {
-  const signature = (await ethereum.request({
-    method: "personal_sign",
-    params: [message, address],
-  })) as string;
-
-  if (!signature) {
-    throw new Error("Wallet did not return a signature.");
-  }
-
-  return signature;
+  return "Failed to connect wallet.";
 }
 
 export function WalletConnectButton({
@@ -87,75 +60,120 @@ export function WalletConnectButton({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { address, isConnected, chainId } = useAccount();
+  const { disconnect } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
+  const { switchChainAsync } = useSwitchChain();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<WalletSession | null>(() => getWalletSessionFromDocumentCookie());
+  const autoAuthAddressRef = useRef<string | null>(null);
 
   const nextPath = searchParams.get("next") || "/dashboard";
+  const isSessionActiveForConnectedAddress =
+    !!session?.address && !!address && session.address.toLowerCase() === address.toLowerCase();
 
-  async function connect() {
+  async function authenticateWallet(authAddress: string): Promise<void> {
+    if (!isAllowedWallet(authAddress)) {
+      throw new Error("Wallet is not in the organization allowlist.");
+    }
+
+    if (chainId !== TARGET_CHAIN_ID) {
+      try {
+        await switchChainAsync({ chainId: TARGET_CHAIN_ID });
+      } catch (error) {
+        const provider = getProvider();
+        if (!provider) {
+          throw error;
+        }
+        await provider.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: TARGET_CHAIN_HEX,
+              chainName: "Arbitrum Sepolia",
+              rpcUrls: ["https://sepolia-rollup.arbitrum.io/rpc"],
+              nativeCurrency: {
+                name: "Ethereum",
+                symbol: "ETH",
+                decimals: 18,
+              },
+              blockExplorerUrls: ["https://sepolia.arbiscan.io"],
+            },
+          ],
+        });
+        await switchChainAsync({ chainId: TARGET_CHAIN_ID });
+      }
+    }
+
+    const challengeResponse = await fetch("/api/auth/wallet/challenge", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ address: authAddress, chain_id: TARGET_CHAIN_ID }),
+    });
+    const challengePayload = (await challengeResponse.json()) as ChallengeEnvelope;
+    if (!challengeResponse.ok || !challengePayload.success || !challengePayload.data?.message) {
+      throw new Error(challengePayload.error || "Failed to request wallet challenge.");
+    }
+
+    const signature = await signMessageAsync({ message: challengePayload.data.message });
+    if (!signature) {
+      throw new Error("Wallet did not return a signature.");
+    }
+
+    const loginResponse = await fetch("/api/auth/wallet/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        address: authAddress,
+        chain_id: TARGET_CHAIN_ID,
+        signature,
+      }),
+    });
+
+    const loginPayload = (await loginResponse.json()) as WalletLoginEnvelope;
+    if (!loginResponse.ok || !loginPayload.success || !loginPayload.data?.token) {
+      throw new Error(loginPayload.error || "Wallet login failed.");
+    }
+
+    const nextSession: WalletSession = {
+      address: authAddress,
+      chainId: TARGET_CHAIN_ID,
+      role: loginPayload.data.role,
+      token: loginPayload.data.token,
+      connectedAt: new Date().toISOString(),
+    };
+
+    writeWalletSessionCookie(nextSession);
+    setSession(nextSession);
+    router.push(nextPath);
+    router.refresh();
+  }
+
+  async function handleWalletAction(openConnectModal?: (() => void) | null) {
     setError(null);
+
+    if (!isConnected || !address) {
+      if (openConnectModal) {
+        openConnectModal();
+        return;
+      }
+      setError("No wallet connector available.");
+      return;
+    }
+
     setBusy(true);
-
     try {
-      const ethereum = getEthereum();
-      if (!ethereum) {
-        throw new Error("No wallet detected. Install MetaMask or another EVM wallet.");
-      }
-
-      const address = await requestConnectedAddress(ethereum);
-      if (!isAllowedWallet(address)) {
-        throw new Error("Wallet is not in the organization allowlist.");
-      }
-
-      await ensureTargetChain(ethereum);
-
-      const challengeResponse = await fetch("/api/auth/wallet/challenge", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ address, chain_id: TARGET_CHAIN_ID }),
-      });
-      const challengePayload = (await challengeResponse.json()) as ChallengeEnvelope;
-      if (!challengeResponse.ok || !challengePayload.success || !challengePayload.data?.message) {
-        throw new Error(challengePayload.error || "Failed to get wallet challenge.");
-      }
-
-      const signature = await signLoginMessage(ethereum, address, challengePayload.data.message);
-      const loginResponse = await fetch("/api/auth/wallet/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          address,
-          chain_id: TARGET_CHAIN_ID,
-          signature,
-        }),
-      });
-      const loginPayload = (await loginResponse.json()) as WalletLoginEnvelope;
-      if (!loginResponse.ok || !loginPayload.success || !loginPayload.data?.token) {
-        throw new Error(loginPayload.error || "Wallet login failed.");
-      }
-
-      const nextSession: WalletSession = {
-        address,
-        chainId: TARGET_CHAIN_ID,
-        role: loginPayload.data.role,
-        token: loginPayload.data.token,
-        connectedAt: new Date().toISOString(),
-      };
-
-      writeWalletSessionCookie(nextSession);
-      setSession(nextSession);
-      router.push(nextPath);
-      router.refresh();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to connect wallet.";
-      setError(message);
+      await authenticateWallet(address);
+    } catch (error) {
+      setError(getReadableError(error));
     } finally {
       setBusy(false);
     }
   }
 
-  function disconnect() {
+  function handleDisconnect() {
+    disconnect();
     clearWalletSessionCookie();
     setSession(null);
     setError(null);
@@ -163,32 +181,80 @@ export function WalletConnectButton({
     router.refresh();
   }
 
-  if (mode === "header") {
-    if (session) {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="hidden rounded-xl border border-border bg-surface-soft px-2.5 py-1.5 font-mono text-xs text-muted sm:inline-flex">
-            {`${session.address.slice(0, 6)}...${session.address.slice(-4)}`}
-          </span>
-          <Button variant="secondary" size="sm" onClick={disconnect}>
-            Disconnect
-          </Button>
-        </div>
-      );
+  const triggerAutoAuth = useEffectEvent(() => {
+    void handleWalletAction();
+  });
+
+  useEffect(() => {
+    if (!isConnected || !address || busy || isSessionActiveForConnectedAddress) {
+      return;
+    }
+    if (autoAuthAddressRef.current === address.toLowerCase()) {
+      return;
     }
 
+    autoAuthAddressRef.current = address.toLowerCase();
+    triggerAutoAuth();
+  }, [address, busy, isConnected, isSessionActiveForConnectedAddress]);
+
+  if (mode === "header") {
     return (
-      <Button icon="wallet" size="sm" onClick={connect} disabled={busy} className={className}>
-        {busy ? "Connecting..." : "Connect Wallet"}
-      </Button>
+      <ConnectButton.Custom>
+        {({ account, openConnectModal }) => {
+          const activeAddress = account?.address;
+          const activeSession = session?.address?.toLowerCase() === activeAddress?.toLowerCase();
+          if (activeSession && session) {
+            return (
+              <div className="flex items-center gap-2">
+                <span className="hidden rounded-xl border border-border bg-surface-soft px-2.5 py-1.5 font-mono text-xs text-muted sm:inline-flex">
+                  {`${session.address.slice(0, 6)}...${session.address.slice(-4)}`}
+                </span>
+                <Button variant="secondary" size="sm" onClick={handleDisconnect}>
+                  Disconnect
+                </Button>
+              </div>
+            );
+          }
+
+          return (
+            <Button
+              icon="wallet"
+              size="sm"
+              onClick={() => {
+                void handleWalletAction(openConnectModal);
+              }}
+              disabled={busy}
+              className={className}
+            >
+              {busy ? "Connecting..." : "Connect Wallet"}
+            </Button>
+          );
+        }}
+      </ConnectButton.Custom>
     );
   }
 
   return (
     <div className={className}>
-      <Button icon="wallet" className="w-full justify-center" size="lg" onClick={connect} disabled={busy}>
-        {busy ? "Connecting..." : "Connect wallet"}
-      </Button>
+      <ConnectButton.Custom>
+        {({ openConnectModal }) => (
+          <Button
+            icon="wallet"
+            className="w-full justify-center"
+            size="lg"
+            onClick={() => {
+              void handleWalletAction(openConnectModal);
+            }}
+            disabled={busy || (isConnected && isSessionActiveForConnectedAddress)}
+          >
+            {busy
+              ? "Connecting..."
+              : isSessionActiveForConnectedAddress
+                ? "Connected"
+                : "Connect wallet"}
+          </Button>
+        )}
+      </ConnectButton.Custom>
       {error ? <p className="mt-3 text-center text-sm text-danger">{error}</p> : null}
     </div>
   );

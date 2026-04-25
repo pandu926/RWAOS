@@ -18,10 +18,11 @@ export default async function InvestorsPage() {
         eyebrow="Investor directory"
         title="Investors"
         description="Directory of holders and counterparties within the organization’s operational scope, including whitelist status and activity history."
+        meta={<StatusBadge tone="accent">{investors.length} tracked</StatusBadge>}
         actions={
           <>
-            <Button variant="secondary">Import addresses</Button>
-            <Button>Invite investor</Button>
+            <Button variant="secondary" href="/api/exports/investor-template">Import addresses</Button>
+            <Button href="/investors/new">Invite investor</Button>
           </>
         }
       />
@@ -79,7 +80,9 @@ export default async function InvestorsPage() {
                 <td className="px-6 py-5">
                   <p className="text-sm font-semibold text-foreground">{investor.name}</p>
                 </td>
-                <td className="px-6 py-5 font-mono text-xs text-muted">{investor.address}</td>
+                <td className="px-6 py-5 font-mono text-xs text-muted">
+                  {investor.address}
+                </td>
                 <td className="px-6 py-5 text-sm text-foreground">{investor.role}</td>
                 <td className="px-6 py-5 text-sm text-foreground">{investor.assetsCount}</td>
                 <td className="px-6 py-5 text-sm font-semibold text-foreground">

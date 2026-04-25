@@ -24,8 +24,8 @@ export default async function AssetsPage() {
         meta={<StatusBadge tone="accent">{assets.length} total</StatusBadge>}
         actions={
           <>
-            <Button variant="secondary">Export list</Button>
-            <Button>Create asset</Button>
+            <Button variant="secondary" href="/api/exports/assets">Export list</Button>
+            <Button href="/assets/new">Create asset</Button>
           </>
         }
       />
@@ -41,7 +41,7 @@ export default async function AssetsPage() {
         </SectionCard>
         <SectionCard title="Average yield">
           <p className="text-3xl font-semibold tracking-tight text-foreground">
-            {formatPercentage(averageYield)}
+            {assets.some((asset) => asset.yield > 0) ? formatPercentage(averageYield) : "Derived on issuance"}
           </p>
           <p className="mt-2 text-sm text-muted">Across visible product set</p>
         </SectionCard>
@@ -63,7 +63,7 @@ export default async function AssetsPage() {
               <FilterChip icon="filter">High priority</FilterChip>
             </div>
           </div>
-          <Button variant="secondary">Refresh data</Button>
+          <Button variant="secondary" href="/assets">Refresh data</Button>
         </div>
       </SectionCard>
 

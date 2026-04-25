@@ -1,16 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import {
-  assetTone,
-  disclosures,
-  disclosureTone,
-  getAssetById,
-  transferTone,
-  transfers,
-} from "@/lib/site-data";
+import { assetTone, disclosureTone, transferTone } from "@/lib/site-data";
+import { getAssets, getDisclosures, getTransfers } from "@/lib/api";
 import { Button, DetailList, InlineNotice, PageHeader, SectionCard, StatusBadge, SurfaceTable } from "@/components/ui";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
+import { contractAddresses } from "@/lib/web3/contracts";
+
+export const dynamic = "force-dynamic";
 
 export default async function AssetDetailPage({
   params,
@@ -18,7 +15,13 @@ export default async function AssetDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const asset = getAssetById(id);
+  const [assets, transfers, disclosures] = await Promise.all([
+    getAssets(),
+    getTransfers(),
+    getDisclosures(),
+  ]);
+
+  const asset = assets.find((item) => item.id === id);
 
   if (!asset) {
     notFound();
@@ -62,31 +65,31 @@ export default async function AssetDetailPage({
           <p className="text-3xl font-semibold tracking-tight text-foreground">
             {formatCurrency(asset.confidentialAum)}
           </p>
-          <p className="mt-2 text-sm text-muted">Shielded volume under management</p>
+          <p className="mt-2 text-sm text-muted">From transfer records for this asset</p>
         </SectionCard>
-        <SectionCard title="Holders">
+        <SectionCard title="Transfers tracked">
           <p className="text-3xl font-semibold tracking-tight text-foreground">
-            {asset.holdersCount}
+            {relatedTransfers.length}
           </p>
-          <p className="mt-2 text-sm text-muted">Institutional entities with access</p>
+          <p className="mt-2 text-sm text-muted">Current backend records</p>
         </SectionCard>
         <SectionCard title="Yield">
           <p className="text-3xl font-semibold tracking-tight text-foreground">
             {formatPercentage(asset.yield)}
           </p>
-          <p className="mt-2 text-sm text-muted">Indicative current cycle</p>
+          <p className="mt-2 text-sm text-muted">Current mapped value</p>
         </SectionCard>
         <SectionCard title="Disclosures">
           <p className="text-3xl font-semibold tracking-tight text-foreground">
             {relatedDisclosures.length}
           </p>
-          <p className="mt-2 text-sm text-muted">Active visibility grants tied to this asset</p>
+          <p className="mt-2 text-sm text-muted">Visibility grants linked to this asset</p>
         </SectionCard>
       </div>
 
       <SectionCard
         title="Overview"
-        description="Metadata, jurisdiction, and confidentiality context for this asset."
+        description="Metadata and confidentiality context for this asset."
         action={
           <div className="flex flex-wrap gap-2">
             <StatusBadge tone="accent">Overview</StatusBadge>
@@ -98,7 +101,7 @@ export default async function AssetDetailPage({
         <div className="space-y-6">
           <InlineNotice
             title="Confidentiality note"
-            description="This asset uses disclosure scopes to limit who can view amount and sensitive metadata. Default visibility remains restricted."
+            description="This asset uses disclosure scopes to limit who can view amount and sensitive metadata."
           />
           <DetailList
             items={[
@@ -107,10 +110,9 @@ export default async function AssetDetailPage({
               { label: "Jurisdiction", value: asset.jurisdiction },
               { label: "Last activity", value: asset.lastActivity },
               {
-                label: "Contract address",
-                value: <code className="rounded bg-surface-soft px-2 py-1 font-mono text-xs">0x82A1...4F29</code>,
+                label: "Token contract",
+                value: <code className="rounded bg-surface-soft px-2 py-1 font-mono text-xs">{contractAddresses.confidentialRwaToken}</code>,
               },
-              { label: "Issuance date", value: "12 October 2025" },
             ]}
           />
         </div>
@@ -163,7 +165,7 @@ export default async function AssetDetailPage({
                   </StatusBadge>
                 </div>
                 <p className="mt-3 text-xs text-muted">
-                  {disclosure.grantedBy} • {disclosure.grantedAt}
+                  {disclosure.grantedBy} • Expires {disclosure.expiresAt}
                 </p>
               </div>
             ))}

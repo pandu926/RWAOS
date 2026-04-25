@@ -269,7 +269,11 @@ pub fn wallet_allowlist_from_env() -> HashMap<String, Role> {
 
 fn assign_role_allowlist(map: &mut HashMap<String, Role>, role: Role, env_key: &str) {
     let value = std::env::var(env_key).unwrap_or_default();
-    for wallet in value.split(',').map(normalize_address).filter(|item| !item.is_empty()) {
+    for wallet in value
+        .split(',')
+        .map(normalize_address)
+        .filter(|item| !item.is_empty())
+    {
         map.insert(wallet, role);
     }
 }

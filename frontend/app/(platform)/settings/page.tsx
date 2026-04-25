@@ -1,4 +1,4 @@
-import { settingsData } from "@/lib/site-data";
+import { organization } from "@/lib/site-data";
 import { DetailList, InlineNotice, PageHeader, SectionCard, SurfaceTable } from "@/components/ui";
 import {
   chainConfig,
@@ -9,8 +9,57 @@ import {
 
 export const dynamic = "force-dynamic";
 
+function parseWalletList(value: string | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => entry.length > 0);
+}
+
 export default function SettingsPage() {
   const web3Validation = validatePublicWeb3Config();
+  const adminWallets = parseWalletList(process.env.AUTH_ADMIN_WALLETS);
+  const operatorWallets = parseWalletList(process.env.AUTH_OPERATOR_WALLETS);
+  const auditorWallets = parseWalletList(process.env.AUTH_AUDITOR_WALLETS);
+  const publicAllowedWallets = parseWalletList(process.env.NEXT_PUBLIC_ALLOWED_WALLETS);
+
+  const roleRows = [
+    {
+      name: "Admin",
+      description: "Configuration and governance access (server allowlist).",
+      members: adminWallets.length,
+    },
+    {
+      name: "Operator",
+      description: "Transfer and asset operations (server allowlist).",
+      members: operatorWallets.length,
+    },
+    {
+      name: "Auditor",
+      description: "Read/audit scope (server allowlist).",
+      members: auditorWallets.length,
+    },
+    {
+      name: "Public allowlist",
+      description: "Optional frontend wallet gate from NEXT_PUBLIC_ALLOWED_WALLETS.",
+      members: publicAllowedWallets.length,
+    },
+  ];
+
+  const configuredRoleRows = roleRows.filter((role) => role.members > 0);
+  const supportContact = process.env.SUPPORT_EMAIL?.trim() || organization.supportEmail;
+  const retentionPolicy = process.env.AUDIT_RETENTION_POLICY?.trim() || "Not configured";
+  const privacyMode =
+    process.env.PRIVACY_MODE?.trim() || "Role-scoped visibility enforced by backend";
+  const environmentLabel = process.env.APP_ENVIRONMENT_LABEL?.trim() || organization.environmentLabel;
+  const settlementTarget = process.env.SETTLEMENT_TIME_TARGET?.trim() || "Not configured";
+  const privacyMethod = process.env.PRIVACY_METHOD?.trim() || "Confidential transfer flow";
+  const totalConfiguredWallets = adminWallets.length + operatorWallets.length + auditorWallets.length;
+
   const contractSummary = [
     {
       label: "Confidential RWA Token",
@@ -39,19 +88,19 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="System configuration"
         title="Settings"
-        description="Organization configuration, role matrix, and system posture for this Confidential RWA OS instance."
+        description="Organization configuration, role matrix, and system posture from runtime config."
       />
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
         <div className="space-y-6">
-          <SectionCard title="Organization settings" description="Static configuration summary for the dummy environment.">
+          <SectionCard title="Organization settings" description="Current runtime values loaded for this instance.">
             <DetailList
               items={[
-                { label: "Organization", value: "Global Asset Custody Ltd." },
-                { label: "Environment", value: settingsData.organizationSettings.environment },
-                { label: "Support contact", value: settingsData.organizationSettings.supportEmail },
-                { label: "Retention policy", value: settingsData.organizationSettings.retentionPolicy },
-                { label: "Privacy mode", value: settingsData.organizationSettings.privacyMode },
+                { label: "Organization", value: organization.name },
+                { label: "Environment", value: environmentLabel },
+                { label: "Support contact", value: supportContact },
+                { label: "Retention policy", value: retentionPolicy },
+                { label: "Privacy mode", value: privacyMode },
               ]}
             />
           </SectionCard>
@@ -66,7 +115,7 @@ export default function SettingsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {settingsData.roles.map((role) => (
+                {(configuredRoleRows.length > 0 ? configuredRoleRows : roleRows).map((role) => (
                   <tr key={role.name} className="hover:bg-surface-soft/80">
                     <td className="px-6 py-5 text-sm font-semibold text-foreground">{role.name}</td>
                     <td className="px-6 py-5 text-sm text-foreground">{role.description}</td>
@@ -83,25 +132,28 @@ export default function SettingsPage() {
             <div className="space-y-4 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted">Active network</span>
-                <span className="font-medium text-foreground">{settingsData.network.chain}</span>
+                <span className="font-medium text-foreground">{organization.networkName}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted">Settlement time</span>
-                <span className="font-medium text-foreground">{settingsData.network.settlementTime}</span>
+                <span className="font-medium text-foreground">{settlementTarget}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted">Privacy method</span>
-                <span className="font-medium text-foreground">{settingsData.network.privacyMethod}</span>
+                <span className="font-medium text-foreground">{privacyMethod}</span>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted">System health</span>
+                  <span className="text-muted">Configured privileged wallets</span>
                   <span className="font-medium text-foreground">
-                    {settingsData.network.systemHealth}%
+                    {totalConfiguredWallets}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-surface-soft">
-                  <div className="h-2 rounded-full bg-success" style={{ width: `${settingsData.network.systemHealth}%` }} />
+                  <div
+                    className="h-2 rounded-full bg-success"
+                    style={{ width: `${Math.min(100, totalConfiguredWallets * 10)}%` }}
+                  />
                 </div>
               </div>
             </div>

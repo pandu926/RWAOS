@@ -7,17 +7,16 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { StatusBadge } from "@/components/ui";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
-import { navigation, organization, sessionProfile } from "@/lib/site-data";
+import { navigation, organization } from "@/lib/site-data";
 import { cn, shortenAddress } from "@/lib/utils";
 import { getWalletSessionFromDocumentCookie } from "@/lib/web3/session";
 
 export function PlatformShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [walletAddress] = useState(() => {
-    const session = getWalletSessionFromDocumentCookie();
-    return session?.address ?? sessionProfile.walletAddress;
-  });
+  const [walletSession] = useState(() => getWalletSessionFromDocumentCookie());
+  const walletAddress = walletSession?.address;
+  const walletRole = walletSession?.role ? walletSession.role.toUpperCase() : "No active wallet";
 
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground">
@@ -100,19 +99,19 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 
         <div className="rounded-[1.5rem] border border-border bg-surface-soft p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted">Session</p>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-full bg-surface shadow-sm">
-                <Icon name="user" className="size-4 text-foreground" />
-              </div>
+          <div className="mt-3 flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-full bg-surface shadow-sm">
+              <Icon name="user" className="size-4 text-foreground" />
+            </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
-                {sessionProfile.name}
+                {walletAddress ? "Wallet session" : "Not connected"}
               </p>
-              <p className="truncate text-xs text-muted">{sessionProfile.role}</p>
+              <p className="truncate text-xs text-muted">{walletRole}</p>
             </div>
           </div>
           <p className="mt-3 font-mono text-xs text-muted">
-            {shortenAddress(walletAddress)}
+            {walletAddress ? shortenAddress(walletAddress) : "Connect wallet to start session"}
           </p>
         </div>
       </aside>

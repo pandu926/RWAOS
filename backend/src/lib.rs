@@ -22,13 +22,13 @@ use axum::{
     http::{Request, StatusCode, header},
     response::Response,
 };
+use compliance_passports::CompliancePassportRepository;
 use disclosure_mgmt::DisclosureRepository;
 use identity_access::{AuthUser, Role, wallet_allowlist_from_env};
 use investor_registry::InvestorRepository;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use tokio::sync::RwLock;
 use transfer_ops::TransferRepository;
-use compliance_passports::CompliancePassportRepository;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct ApiEnvelope<T> {
@@ -124,8 +124,9 @@ impl AppState {
             (auditor.token.clone(), auditor),
         ]);
 
-        let pool = PgPool::connect_lazy("postgres://postgres:postgres@127.0.0.1:5432/rwaos_backend")
-            .expect("valid lazy postgres URL");
+        let pool =
+            PgPool::connect_lazy("postgres://postgres:postgres@127.0.0.1:5432/rwaos_backend")
+                .expect("valid lazy postgres URL");
 
         Self {
             auth_users: Arc::new(auth_users),
@@ -149,8 +150,10 @@ pub fn build_app(state: AppState) -> Router {
     let health_router = health::routes();
     let auth_router = identity_access::routes(state.clone());
 
-    let admin_operator_guard = middleware::from_fn_with_state(state.clone(), require_admin_or_operator);
-    let admin_auditor_guard = middleware::from_fn_with_state(state.clone(), require_admin_or_auditor);
+    let admin_operator_guard =
+        middleware::from_fn_with_state(state.clone(), require_admin_or_operator);
+    let admin_auditor_guard =
+        middleware::from_fn_with_state(state.clone(), require_admin_or_auditor);
 
     Router::new()
         .merge(health_router)
@@ -188,7 +191,10 @@ async fn require_admin_or_auditor(
 
 fn authorize(state: &AppState, req: &Request<Body>, allowed: &[Role]) -> Result<(), StatusCode> {
     let token = extract_bearer_token(req).ok_or(StatusCode::UNAUTHORIZED)?;
-    let user = state.auth_tokens.get(token).ok_or(StatusCode::UNAUTHORIZED)?;
+    let user = state
+        .auth_tokens
+        .get(token)
+        .ok_or(StatusCode::UNAUTHORIZED)?;
     if allowed.iter().any(|role| role == &user.role) {
         Ok(())
     } else {
