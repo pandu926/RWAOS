@@ -5,6 +5,8 @@ type ChallengeRequest = {
   chain_id: number;
 };
 
+const TARGET_CHAIN_ID = 421614;
+
 function getBackendBaseUrl(): string {
   const base =
     process.env.INTERNAL_API_BASE_URL?.trim() ||
@@ -16,13 +18,49 @@ function getBackendBaseUrl(): string {
   return base.endsWith("/") ? base.slice(0, -1) : base;
 }
 
+function isValidEvmAddress(value: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(value.trim());
+}
+
+function toProxyResponse(response: Response, responseBody: string): NextResponse {
+  const headers = new Headers(response.headers);
+  if (!headers.get("content-type")) {
+    headers.set("content-type", "application/json");
+  }
+  headers.set("cache-control", "no-store");
+  return new NextResponse(responseBody, {
+    status: response.status,
+    headers,
+  });
+}
+
+function parseChallengeRequest(input: unknown): ChallengeRequest {
+  const body = (input ?? {}) as Record<string, unknown>;
+  const address = typeof body.address === "string" ? body.address.trim().toLowerCase() : "";
+  const chainIdInput = body.chain_id ?? body.chainId;
+  const chainId = Number(chainIdInput);
+
+  if (!isValidEvmAddress(address)) {
+    throw new Error("`address` must be a valid EVM address.");
+  }
+  if (!Number.isInteger(chainId) || chainId <= 0) {
+    throw new Error("`chain_id` must be a positive integer.");
+  }
+  if (chainId !== TARGET_CHAIN_ID) {
+    throw new Error("`chain_id` must be Arbitrum Sepolia (421614).");
+  }
+
+  return { address, chain_id: chainId };
+}
+
 export async function POST(request: Request) {
   let payload: ChallengeRequest;
   try {
-    payload = (await request.json()) as ChallengeRequest;
-  } catch {
+    payload = parseChallengeRequest(await request.json());
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid JSON body.";
     return NextResponse.json(
-      { success: false, error: "Invalid JSON body." },
+      { success: false, error: message },
       { status: 400 },
     );
   }
@@ -42,11 +80,8 @@ export async function POST(request: Request) {
       body: JSON.stringify(payload),
       cache: "no-store",
     });
-    const body = await response.text();
-    return new NextResponse(body, {
-      status: response.status,
-      headers: { "content-type": "application/json" },
-    });
+    const responseBody = await response.text();
+    return toProxyResponse(response, responseBody);
   } catch {
     return NextResponse.json(
       { success: false, error: "Failed to reach backend wallet challenge endpoint." },

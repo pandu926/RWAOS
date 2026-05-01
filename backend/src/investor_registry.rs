@@ -1,14 +1,17 @@
 use axum::{
     Json, Router,
     extract::{State, rejection::JsonRejection},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     routing::get,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{FromRow, PgPool};
 
-use crate::{ApiEnvelope, AppState};
+use crate::{
+    ApiEnvelope, AppState, authorized_user_from_headers, identity_access::Role,
+    institution_id_from_user,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Investor {
@@ -34,10 +37,15 @@ impl InvestorRepository {
         Self { pool }
     }
 
-    pub async fn create(&self, payload: CreateInvestorRequest) -> Result<Investor, sqlx::Error> {
+    pub async fn create(
+        &self,
+        institution_id: i64,
+        payload: CreateInvestorRequest,
+    ) -> Result<Investor, sqlx::Error> {
         sqlx::query_as::<_, Investor>(
-            "INSERT INTO investors (legal_name, jurisdiction, wallet_address) VALUES ($1, $2, $3) RETURNING id, legal_name, jurisdiction, wallet_address",
+            "INSERT INTO investors (institution_id, legal_name, jurisdiction, wallet_address) VALUES ($1, $2, $3, $4) RETURNING id, legal_name, jurisdiction, wallet_address",
         )
+        .bind(institution_id)
         .bind(payload.legal_name)
         .bind(payload.jurisdiction)
         .bind(payload.wallet_address)
@@ -45,10 +53,11 @@ impl InvestorRepository {
         .await
     }
 
-    pub async fn list(&self) -> Result<Vec<Investor>, sqlx::Error> {
+    pub async fn list(&self, institution_id: i64) -> Result<Vec<Investor>, sqlx::Error> {
         sqlx::query_as::<_, Investor>(
-            "SELECT id, legal_name, jurisdiction, wallet_address FROM investors ORDER BY id ASC",
+            "SELECT id, legal_name, jurisdiction, wallet_address FROM investors WHERE institution_id = $1 ORDER BY id ASC",
         )
+        .bind(institution_id)
         .fetch_all(&self.pool)
         .await
     }
@@ -60,17 +69,44 @@ pub fn routes(state: AppState) -> Router {
         .with_state(state)
 }
 
-async fn list(State(state): State<AppState>) -> Json<ApiEnvelope<Vec<Investor>>> {
-    match state.investor_repo.list().await {
-        Ok(items) => Json(ApiEnvelope::ok(items)),
-        Err(err) => Json(ApiEnvelope::err(format!("failed to list investors: {err}"))),
+async fn list(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> (StatusCode, Json<ApiEnvelope<Vec<Investor>>>) {
+    let user = match authorized_user_from_headers(&state, &headers, &[Role::Admin, Role::Operator])
+    {
+        Ok(value) => value,
+        Err(code) => return (code, Json(ApiEnvelope::err("unauthorized"))),
+    };
+    let institution_id = match institution_id_from_user(&user) {
+        Ok(value) => value,
+        Err(code) => return (code, Json(ApiEnvelope::err("missing institution scope"))),
+    };
+
+    match state.investor_repo.list(institution_id).await {
+        Ok(items) => (StatusCode::OK, Json(ApiEnvelope::ok(items))),
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiEnvelope::err(format!("failed to list investors: {err}"))),
+        ),
     }
 }
 
 async fn create(
     State(state): State<AppState>,
+    headers: HeaderMap,
     payload: Result<Json<Value>, JsonRejection>,
 ) -> (StatusCode, Json<ApiEnvelope<Investor>>) {
+    let user = match authorized_user_from_headers(&state, &headers, &[Role::Admin, Role::Operator])
+    {
+        Ok(value) => value,
+        Err(code) => return (code, Json(ApiEnvelope::err("unauthorized"))),
+    };
+    let institution_id = match institution_id_from_user(&user) {
+        Ok(value) => value,
+        Err(code) => return (code, Json(ApiEnvelope::err("missing institution scope"))),
+    };
+
     let payload = match payload {
         Ok(Json(value)) => match parse_create_investor_request(&value) {
             Ok(parsed) => parsed,
@@ -86,7 +122,7 @@ async fn create(
         }
     };
 
-    match state.investor_repo.create(payload).await {
+    match state.investor_repo.create(institution_id, payload).await {
         Ok(created) => (StatusCode::OK, Json(ApiEnvelope::ok(created))),
         Err(err) => (
             StatusCode::INTERNAL_SERVER_ERROR,

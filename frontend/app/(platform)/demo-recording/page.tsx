@@ -32,7 +32,7 @@ const recordingSteps = [
       "Wallet sender dan recipient yang sudah termapping",
     ],
     narration:
-      "Untuk demo ini, saya memakai skenario seeded yang sudah siap. Wallet investor sumber dan penerima sudah termapping ke backend, jadi bukan input dummy manual.",
+      "Untuk demo ini, saya memakai data tenant aktif. Wallet investor sumber dan penerima sudah termapping ke backend, jadi presenter tidak perlu mengetik alamat manual.",
   },
   {
     scene: "Scene 3",
@@ -75,7 +75,7 @@ const recordingSteps = [
       "Jelaskan bahwa transfer menghasilkan bukti compliance yang bisa diaudit tanpa membuka semua isi transaksi ke publik.",
     show: [
       "Transfer record ID",
-      "Transfer ID on-chain",
+      "Contract transfer ID",
       "Policy hash",
       "Anchor hash",
       "Disclosure scope",
@@ -101,10 +101,10 @@ const recordingSteps = [
 ];
 
 const sceneChecklist = [
-  "Gunakan wallet admin atau operator yang sudah ada di allowlist backend.",
+  "Gunakan wallet tenant yang sudah login dan sudah menyelesaikan onboarding bundle.",
   "Pastikan jaringan wallet berada di Arbitrum Sepolia.",
-  "Jangan tampilkan halaman kosong, mulai dari route yang sudah ada data seeded.",
-  "Kalau ingin demo aman, fokus ke flow yang sudah seeded: disclosure, transfer readiness, passport, audit.",
+  "Jangan tampilkan halaman kosong, mulai dari route yang sudah punya data tenant aktif.",
+  "Kalau ingin demo aman, fokus ke flow live tenant: disclosure, transfer readiness, passport, audit.",
   "Siapkan browser dengan zoom 90-100% agar tabel tidak terpotong saat rekam.",
 ];
 

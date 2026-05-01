@@ -17,9 +17,17 @@ export type Asset = {
   jurisdiction: string;
   holdersCount: number;
   confidentialAum: number;
+  aumVisibility: "Restricted" | "Visible to owner";
   yield: number;
   lastActivity: string;
   description: string;
+  metadataUri?: string | null;
+  issuanceWallet?: string | null;
+  initialSupply?: number | null;
+  anchorHash?: string | null;
+  anchorTxHash?: string | null;
+  issuanceTxHash?: string | null;
+  createdAtUnix?: number | null;
 };
 
 export type Transfer = {
@@ -29,10 +37,16 @@ export type Transfer = {
   from: string;
   to: string;
   amount: number;
-  amountVisibility: "Hidden" | "Restricted" | "Visible to authorized users only";
+  amountVisibility: "Hidden" | "Restricted" | "Visible to owner" | "Visible to authorized wallet";
   status: "Submitted" | "Pending" | "Confirmed" | "Failed" | "Rejected";
   submittedAt: string;
   reference: string;
+  txHash?: string | null;
+  disclosureDataId?: string | null;
+  senderWallet?: string | null;
+  recipientWallet?: string | null;
+  failureReason?: string | null;
+  referenceNote?: string | null;
 };
 
 export type Disclosure = {
@@ -56,6 +70,13 @@ export type Investor = {
   assetsCount: number;
   allocation: number;
   lastActivity: string;
+  jurisdiction: string;
+  walletMapped: boolean;
+  sentTransfers: number;
+  receivedTransfers: number;
+  disclosureGrants: number;
+  initialHolderAssetsCount: number;
+  readiness: "Ready" | "Needs wallet mapping";
 };
 
 export type AuditEvent = {
@@ -89,8 +110,10 @@ export type CompliancePassport = {
 
 export const navigation: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+  { href: "/onboarding", label: "Onboarding", icon: "sparkles" },
   { href: "/assets", label: "Assets", icon: "building" },
   { href: "/investors", label: "Investors", icon: "users" },
+  { href: "/settlement", label: "Settlement", icon: "wallet" },
   { href: "/transfers", label: "Transfers", icon: "transfers" },
   { href: "/disclosures", label: "Disclosures", icon: "eye" },
   { href: "/audit", label: "Audit", icon: "shield" },

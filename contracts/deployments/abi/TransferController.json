@@ -20,6 +20,43 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "bytes32",
+        "name": "transferId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "disclosureDataId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "policyHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "anchorHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "CompliancePassportIssued",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "address",
         "name": "initiator",
         "type": "address"
@@ -75,6 +112,60 @@
       }
     ],
     "name": "confidentialTransferFromWithDisclosure",
+    "outputs": [
+      {
+        "internalType": "euint256",
+        "name": "transferred",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "externalEuint256",
+        "name": "encryptedAmount",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "inputProof",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "disclosureDataId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "transferId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "policyHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "anchorHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "confidentialTransferFromWithPassport",
     "outputs": [
       {
         "internalType": "euint256",

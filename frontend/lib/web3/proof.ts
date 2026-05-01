@@ -73,24 +73,6 @@ function isBytes32(value: string): value is Hex {
   return /^0x[a-fA-F0-9]{64}$/.test(value);
 }
 
-function getInjectedAdapter(): NoxProofAdapter | null {
-  const candidate = (globalThis as { __RWAOS_NOX_PROOF_ADAPTER__?: unknown }).__RWAOS_NOX_PROOF_ADAPTER__;
-  if (!candidate || typeof candidate !== "object") {
-    return null;
-  }
-
-  const adapter = candidate as Partial<NoxProofAdapter>;
-  if (
-    typeof adapter.name === "string" &&
-    typeof adapter.isAvailable === "function" &&
-    typeof adapter.generate === "function"
-  ) {
-    return adapter as NoxProofAdapter;
-  }
-
-  return null;
-}
-
 function unavailableFailure(detail?: string): ProofGenerationFailure {
   return {
     ok: false,
@@ -159,7 +141,7 @@ export function createViemWalletClientProofAdapter(
 
 export async function generateEncryptedAmountAndProof(
   request: NoxProofGenerationRequest,
-  adapter: NoxProofAdapter | null = getInjectedAdapter(),
+  adapter: NoxProofAdapter | null,
 ): Promise<ProofGenerationResult> {
   if (request.amount <= BigInt(0)) {
     return {
@@ -185,7 +167,7 @@ export async function generateEncryptedAmountAndProof(
 
   if (!adapter) {
     return unavailableFailure(
-      "Tidak ada adapter NOX yang di-pass ke helper dan tidak ada adapter global `__RWAOS_NOX_PROOF_ADAPTER__`.",
+      "Tidak ada adapter NOX yang di-pass ke helper untuk sesi wallet ini.",
     );
   }
 

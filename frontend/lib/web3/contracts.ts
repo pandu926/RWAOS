@@ -1,22 +1,33 @@
 import auditAnchorAbiJson from "@/lib/web3/abi/audit-anchor.json";
 import confidentialRwaTokenAbiJson from "@/lib/web3/abi/confidential-rwa-token.json";
 import disclosureRegistryAbiJson from "@/lib/web3/abi/disclosure-registry.json";
+import settlementVaultAbiJson from "@/lib/web3/abi/settlement-vault.json";
+import tenantFactoryAbiJson from "@/lib/web3/abi/tenant-factory.json";
 import transferControllerAbiJson from "@/lib/web3/abi/transfer-controller.json";
 
 type HexAddress = `0x${string}`;
-type ContractName =
+export type CoreContractName =
   | "confidentialRwaToken"
   | "disclosureRegistry"
   | "transferController"
   | "auditAnchor";
+export type ContractName = CoreContractName | "tenantFactory" | "settlementVault";
 
 type AbiItem = {
   type: string;
   name?: string;
-  inputs?: Array<{ name: string; type: string; internalType?: string; indexed?: boolean }>;
-  outputs?: Array<{ name: string; type: string; internalType?: string }>;
+  inputs?: AbiParam[];
+  outputs?: AbiParam[];
   stateMutability?: string;
   anonymous?: boolean;
+};
+
+type AbiParam = {
+  name: string;
+  type: string;
+  internalType?: string;
+  indexed?: boolean;
+  components?: AbiParam[];
 };
 
 type ConfigValidation = {
@@ -45,6 +56,10 @@ function readEnv(name: string, fallback: string): string {
   return value.trim();
 }
 
+function readOptionalEnv(name: string): string {
+  return process.env[name]?.trim() ?? "";
+}
+
 function isHexAddress(value: string): value is HexAddress {
   return /^0x[a-fA-F0-9]{40}$/.test(value);
 }
@@ -58,7 +73,7 @@ export const chainConfig = {
   rpcUrl: readEnv("NEXT_PUBLIC_RPC_URL", DEFAULTS.rpcUrl),
 } as const;
 
-export const contractAddresses: Record<ContractName, HexAddress> = {
+export const contractAddresses: Record<CoreContractName, HexAddress> = {
   confidentialRwaToken: readEnv(
     "NEXT_PUBLIC_CONTRACT_CONFIDENTIAL_RWA_TOKEN",
     DEFAULTS.addresses.confidentialRwaToken,
@@ -77,11 +92,33 @@ export const contractAddresses: Record<ContractName, HexAddress> = {
   ) as HexAddress,
 };
 
+const tenantFactoryEnvValue = readOptionalEnv("NEXT_PUBLIC_CONTRACT_TENANT_FACTORY");
+
+export const tenantFactoryAddress: HexAddress | null = isHexAddress(tenantFactoryEnvValue)
+  ? tenantFactoryEnvValue
+  : null;
+
+export const tenantFactoryEnvConfigured = tenantFactoryEnvValue.length > 0;
+export const tenantFactoryEnvInvalid = tenantFactoryEnvConfigured && !tenantFactoryAddress;
+
+export const MANAGED_CONTRACT_LABEL = "Managed global demo contracts (shared Arbitrum Sepolia)";
+
+export function getManagedContractAddresses(): Record<CoreContractName, HexAddress> {
+  return {
+    confidentialRwaToken: contractAddresses.confidentialRwaToken,
+    disclosureRegistry: contractAddresses.disclosureRegistry,
+    transferController: contractAddresses.transferController,
+    auditAnchor: contractAddresses.auditAnchor,
+  };
+}
+
 const abiMap: Record<ContractName, AbiItem[]> = {
   confidentialRwaToken: confidentialRwaTokenAbiJson as AbiItem[],
   disclosureRegistry: disclosureRegistryAbiJson as AbiItem[],
   transferController: transferControllerAbiJson as AbiItem[],
+  settlementVault: settlementVaultAbiJson as AbiItem[],
   auditAnchor: auditAnchorAbiJson as AbiItem[],
+  tenantFactory: tenantFactoryAbiJson as AbiItem[],
 };
 
 export function getContractAbi(name: ContractName): AbiItem[] {
@@ -117,6 +154,9 @@ export function validatePublicWeb3Config(): ConfigValidation {
     if (!isHexAddress(value)) {
       invalid.push(`NEXT_PUBLIC_CONTRACT_${key.toUpperCase()}`);
     }
+  }
+  if (tenantFactoryEnvInvalid) {
+    invalid.push("NEXT_PUBLIC_CONTRACT_TENANT_FACTORY");
   }
 
   return { ok: missing.length === 0 && invalid.length === 0, missing, invalid };

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { Icon } from "@/components/icons";
-import { StatusBadge } from "@/components/ui";
+import { Button, StatusBadge } from "@/components/ui";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { navigation, organization } from "@/lib/site-data";
 import { cn, shortenAddress } from "@/lib/utils";
@@ -135,7 +135,10 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center">
+            <div className="flex shrink-0 items-center gap-2">
+              <Button href="/onboarding" variant="secondary" size="sm" className="hidden sm:inline-flex">
+                Onboarding
+              </Button>
               <WalletConnectButton mode="header" />
             </div>
           </div>

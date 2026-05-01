@@ -5,13 +5,17 @@ type ContractName =
   | "ConfidentialRWAToken"
   | "DisclosureRegistry"
   | "TransferController"
-  | "AuditAnchor";
+  | "SettlementVault"
+  | "AuditAnchor"
+  | "TenantFactory";
 
 const contracts: ContractName[] = [
   "ConfidentialRWAToken",
   "DisclosureRegistry",
   "TransferController",
-  "AuditAnchor"
+  "SettlementVault",
+  "AuditAnchor",
+  "TenantFactory"
 ];
 
 function main() {

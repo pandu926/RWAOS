@@ -33,7 +33,7 @@ const useCases = [
 const trustPillars = [
   "Role-based access with explicit scope",
   "Audit trail that still preserves privacy",
-  "Institutional operating model, not token mockup",
+  "Institutional operating model with tenant-owned contracts",
 ];
 
 export default function LandingPage() {
@@ -50,7 +50,7 @@ export default function LandingPage() {
                 Confidential RWA OS
               </p>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
-                Tokenized finance privacy layer
+                iExec NOX + ERC-7984 operating layer
               </p>
             </div>
           </div>
@@ -82,15 +82,15 @@ export default function LandingPage() {
       <section className="relative px-4 pb-14 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-28 lg:pt-24">
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
           <div className="space-y-6 sm:space-y-8">
-            <StatusBadge tone="accent">Enterprise privacy layer on public networks</StatusBadge>
+            <StatusBadge tone="accent">iExec NOX Protocol + ERC-7984 confidential tokens</StatusBadge>
             <div className="space-y-4 sm:space-y-5">
               <h1 className="max-w-4xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-6xl">
                 Confidential asset infrastructure for tokenized finance.
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base sm:leading-8">
                 Manage assets and on-chain transfers without exposing nominal values, balances,
-                or allocations to the public. The product shell, selective disclosure controls,
-                and audit trail are ready for demonstrations and pilot execution.
+                or allocations to the public. NOX proof generation, selective disclosure controls,
+                and tenant-owned contracts keep the flow verifiable without making amounts public.
               </p>
             </div>
             <div className="flex flex-wrap gap-4">
@@ -103,7 +103,8 @@ export default function LandingPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <StatusBadge tone="success">{organization.networkName}</StatusBadge>
-              <StatusBadge tone="neutral">Zero-knowledge ready</StatusBadge>
+              <StatusBadge tone="neutral">NOX proof generation</StatusBadge>
+              <StatusBadge tone="neutral">ERC-7984 confidential token flow</StatusBadge>
               <StatusBadge tone="neutral">Selective disclosure by default</StatusBadge>
             </div>
           </div>
@@ -126,9 +127,9 @@ export default function LandingPage() {
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/80">
                       Confidential transfer
                     </p>
-                    <p className="mt-3 text-2xl font-semibold sm:text-3xl">$1.25M</p>
+                    <p className="mt-3 text-2xl font-semibold sm:text-3xl">Encrypted</p>
                     <p className="mt-2 text-sm text-white/85">
-                      Visible only to counterparties and authorized auditors.
+                      Amount is sent as an encrypted payload with a NOX-compatible proof.
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white/8 p-4">
@@ -143,15 +144,16 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <SectionCard title="Privacy">
+                <SectionCard title="NOX proof layer">
                   <p className="text-sm leading-6 text-muted">
-                    Hide amounts, balances, and allocations while preserving operational
-                    usability.
+                    Generate encrypted amount payloads and input proofs from the connected wallet
+                    instead of asking operators to paste manual proof data.
                   </p>
                 </SectionCard>
-                <SectionCard title="Auditability">
+                <SectionCard title="Selective disclosure">
                   <p className="text-sm leading-6 text-muted">
-                    Generate evidence trail and proof references for every sensitive action.
+                    Grant explicit access to auditors or counterparties without exposing the full
+                    transfer ledger publicly.
                   </p>
                 </SectionCard>
               </div>
@@ -190,9 +192,9 @@ export default function LandingPage() {
                 the public.
               </p>
             </SectionCard>
-            <SectionCard title="Demo must feel like a product">
+            <SectionCard title="Demo must prove a product flow">
               <p className="text-sm leading-6 text-muted">
-                MVP credibility comes from coherent workflows, not isolated mock screens.
+                MVP credibility comes from coherent wallet, contract, disclosure, and audit flows.
               </p>
             </SectionCard>
           </div>

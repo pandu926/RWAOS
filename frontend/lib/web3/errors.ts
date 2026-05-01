@@ -4,9 +4,15 @@ export type DecodedContractError = {
   code:
     | "DISCLOSURE_REQUIRED"
     | "OPERATOR_MISSING"
+    | "ZERO_CONFIDENTIAL_BALANCE"
     | "ZERO_ACCOUNT"
     | "INVALID_PROOF"
     | "USE_TRANSFER_CONTROLLER"
+    | "USER_REJECTED"
+    | "INSUFFICIENT_FUNDS"
+    | "CHAIN_MISMATCH"
+    | "NONCE_OR_REPLAY"
+    | "GAS_ESTIMATION_FAILED"
     | "NETWORK_ERROR"
     | "UNKNOWN";
   message: string;
@@ -62,6 +68,96 @@ export function decodeTransferControllerError(error: unknown): DecodedContractEr
       message: "Transfer controller belum menjadi operator untuk holder sumber.",
       detail: "Kontrak token mengecek `isOperator(from, transferController)` sebelum transfer rahasia dijalankan.",
       action: "Panggil `setOperator(transferController, until)` dari wallet holder sumber.",
+      rawMessage,
+      retryable: false,
+    };
+  }
+
+  if (
+    normalized.includes("user rejected") ||
+    normalized.includes("user denied") ||
+    normalized.includes("rejected the request") ||
+    normalized.includes("denied transaction signature") ||
+    normalized.includes("request rejected")
+  ) {
+    return {
+      code: "USER_REJECTED",
+      message: "Transaksi dibatalkan dari wallet.",
+      detail: "Wallet mengembalikan penolakan tanda tangan/transaksi oleh user.",
+      action: "Ulangi dan approve transaksi pada wallet.",
+      rawMessage,
+      retryable: true,
+    };
+  }
+
+  if (
+    normalized.includes("insufficient funds") ||
+    normalized.includes("intrinsic gas too low")
+  ) {
+    return {
+      code: "INSUFFICIENT_FUNDS",
+      message: "Saldo native token tidak cukup untuk gas.",
+      detail: "Wallet tidak memiliki cukup ETH pada network aktif untuk mengeksekusi transaksi.",
+      action: "Isi saldo wallet untuk gas lalu submit ulang.",
+      rawMessage,
+      retryable: false,
+    };
+  }
+
+  if (
+    normalized.includes("chain mismatch") ||
+    normalized.includes("wrong chain") ||
+    normalized.includes("chain id") && normalized.includes("expected")
+  ) {
+    return {
+      code: "CHAIN_MISMATCH",
+      message: "Wallet berada di chain yang salah untuk transaksi ini.",
+      detail: "Chain wallet tidak cocok dengan chain kontrak transfer confidential.",
+      action: "Switch wallet ke Arbitrum Sepolia lalu ulangi.",
+      rawMessage,
+      retryable: true,
+    };
+  }
+
+  if (
+    normalized.includes("nonce too low") ||
+    normalized.includes("already known") ||
+    normalized.includes("replacement transaction underpriced")
+  ) {
+    return {
+      code: "NONCE_OR_REPLAY",
+      message: "Transaksi bentrok dengan nonce wallet saat ini.",
+      detail: "Node RPC menolak transaksi karena nonce/replay atau replacement fee yang tidak memadai.",
+      action: "Refresh wallet nonce (atau tunggu tx pending selesai) lalu kirim ulang.",
+      rawMessage,
+      retryable: true,
+    };
+  }
+
+  if (
+    normalized.includes("failed to estimate gas") ||
+    normalized.includes("cannot estimate gas") ||
+    normalized.includes("gas required exceeds allowance")
+  ) {
+    return {
+      code: "GAS_ESTIMATION_FAILED",
+      message: "Estimasi gas gagal karena call akan revert dengan input saat ini.",
+      detail: "Biasanya terjadi ketika salah satu precondition kontrak belum terpenuhi.",
+      action: "Periksa disclosure/operator/proof lalu submit ulang.",
+      rawMessage,
+      retryable: false,
+    };
+  }
+
+  if (
+    normalized.includes("erc7984zerobalance") ||
+    normalized.includes("0x5ff91cdc")
+  ) {
+    return {
+      code: "ZERO_CONFIDENTIAL_BALANCE",
+      message: "Wallet sender belum punya saldo token confidential untuk ditransfer.",
+      detail: "Kontrak token me-revert dengan `ERC7984ZeroBalance(holder)`.",
+      action: "Mint/token issuance dulu ke wallet sender, lalu ulang transfer.",
       rawMessage,
       retryable: false,
     };

@@ -65,10 +65,10 @@ export default function NewInvestorPage() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Investor directory"
-        title="Invite investor"
-        description="Create a new investor in the backend registry, with optional wallet mapping for downstream transfer, disclosure, and passport flows."
+        title="Add investor"
+        description="Create a backend investor record that maps a legal entity to a wallet address. Transfer, disclosure, and passport flows will reuse this mapping instead of asking users to re-enter raw wallets."
       />
-      <SectionCard title="Investor form" description="Wallet address is optional, but adding it removes manual wallet entry in later operational flows.">
+      <SectionCard title="Investor form" description="If an asset was minted to a wallet, create or update an investor with that same wallet before attempting the first transfer.">
         <div className="grid gap-4">
           <input
             value={legalName}
@@ -90,8 +90,12 @@ export default function NewInvestorPage() {
               className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none"
             />
             <p className="text-xs leading-5 text-muted">
-              Stored as investor wallet mapping and reused by transfer, disclosure, and passport forms.
+              Stored as the investor wallet mapping and reused by transfer sender/recipient resolution, disclosure grantee prefill, and passport context.
             </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-surface-soft p-4 text-sm text-muted">
+            <p className="font-semibold text-foreground">When to create an investor record</p>
+            <p className="mt-2">Create one for every counterparty or holder wallet you actually use in the platform. The most important case is the wallet that received the initial confidential mint for an asset, because that mapped investor must be used as the sender for the first transfer.</p>
           </div>
           <div className="flex gap-3">
             <Button onClick={() => void submit()} disabled={busy}>

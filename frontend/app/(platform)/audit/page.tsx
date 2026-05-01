@@ -10,6 +10,7 @@ export default async function AuditPage() {
   const uniqueActors = new Set(auditEvents.map((item) => item.actor)).size;
   const uniqueActions = new Set(auditEvents.map((item) => item.eventType)).size;
   const latestEventAt = auditEvents.at(-1)?.timestamp ?? "No audit events yet";
+  const latestEvents = auditEvents.slice(-3).reverse();
 
   return (
     <div className="space-y-6">
@@ -45,8 +46,8 @@ export default async function AuditPage() {
       </div>
 
       <InlineNotice
-        title="Auditability without full exposure"
-        description="Events are segmented with consistent visibility labels: Confidential, Restricted, or Visible to authorized users only."
+        title="Asset lifecycle evidence"
+        description="For a complete tenant flow, audit should show asset issuance, disclosure grant, confidential transfer, and compliance passport issuance. Amounts stay hidden; tx/hash references prove the actions happened."
       />
 
       <SectionCard>
@@ -97,7 +98,7 @@ export default async function AuditPage() {
 
         <SectionCard title="Verification bundle" description="Context required by auditors to review logs quickly.">
           <div className="space-y-4">
-            {auditEvents.slice(0, 3).map((event) => (
+            {latestEvents.map((event) => (
               <div key={event.id} className="rounded-2xl border border-border bg-surface-soft p-4">
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-sm font-semibold text-foreground">{event.reference}</p>

@@ -1,14 +1,17 @@
 use axum::{
     Json, Router,
     extract::{State, rejection::JsonRejection},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     routing::get,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{FromRow, PgPool};
 
-use crate::{ApiEnvelope, AppState};
+use crate::{
+    ApiEnvelope, AppState, authorized_user_from_headers, identity_access::Role,
+    institution_id_from_user,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Disclosure {
@@ -44,11 +47,22 @@ impl DisclosureRepository {
 
     pub async fn create(
         &self,
+        institution_id: i64,
         payload: CreateDisclosureRequest,
     ) -> Result<Disclosure, sqlx::Error> {
         sqlx::query_as::<_, Disclosure>(
-            "INSERT INTO disclosures (asset_id, title, content, data_id, grantee, expires_at, tx_hash) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, asset_id, title, content, data_id, grantee, expires_at, tx_hash",
+            r#"
+            INSERT INTO disclosures (
+                institution_id, asset_id, title, content, data_id, grantee, expires_at, tx_hash
+            )
+            SELECT $1, $2, $3, $4, $5, $6, $7, $8
+            WHERE EXISTS (
+                SELECT 1 FROM assets WHERE id = $2 AND institution_id = $1
+            )
+            RETURNING id, asset_id, title, content, data_id, grantee, expires_at, tx_hash
+            "#,
         )
+        .bind(institution_id)
         .bind(payload.asset_id as i64)
         .bind(payload.title)
         .bind(payload.content)
@@ -60,10 +74,11 @@ impl DisclosureRepository {
         .await
     }
 
-    pub async fn list(&self) -> Result<Vec<Disclosure>, sqlx::Error> {
+    pub async fn list(&self, institution_id: i64) -> Result<Vec<Disclosure>, sqlx::Error> {
         sqlx::query_as::<_, Disclosure>(
-            "SELECT id, asset_id, title, content, data_id, grantee, expires_at, tx_hash FROM disclosures ORDER BY id ASC",
+            "SELECT id, asset_id, title, content, data_id, grantee, expires_at, tx_hash FROM disclosures WHERE institution_id = $1 ORDER BY id ASC",
         )
+        .bind(institution_id)
         .fetch_all(&self.pool)
         .await
     }
@@ -75,19 +90,46 @@ pub fn routes(state: AppState) -> Router {
         .with_state(state)
 }
 
-async fn list(State(state): State<AppState>) -> Json<ApiEnvelope<Vec<Disclosure>>> {
-    match state.disclosure_repo.list().await {
-        Ok(items) => Json(ApiEnvelope::ok(items)),
-        Err(err) => Json(ApiEnvelope::err(format!(
-            "failed to list disclosures: {err}"
-        ))),
+async fn list(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> (StatusCode, Json<ApiEnvelope<Vec<Disclosure>>>) {
+    let user = match authorized_user_from_headers(&state, &headers, &[Role::Admin, Role::Operator])
+    {
+        Ok(value) => value,
+        Err(code) => return (code, Json(ApiEnvelope::err("unauthorized"))),
+    };
+    let institution_id = match institution_id_from_user(&user) {
+        Ok(value) => value,
+        Err(code) => return (code, Json(ApiEnvelope::err("missing institution scope"))),
+    };
+
+    match state.disclosure_repo.list(institution_id).await {
+        Ok(items) => (StatusCode::OK, Json(ApiEnvelope::ok(items))),
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiEnvelope::err(format!(
+                "failed to list disclosures: {err}"
+            ))),
+        ),
     }
 }
 
 async fn create(
     State(state): State<AppState>,
+    headers: HeaderMap,
     payload: Result<Json<Value>, JsonRejection>,
 ) -> (StatusCode, Json<ApiEnvelope<Disclosure>>) {
+    let user = match authorized_user_from_headers(&state, &headers, &[Role::Admin, Role::Operator])
+    {
+        Ok(value) => value,
+        Err(code) => return (code, Json(ApiEnvelope::err("unauthorized"))),
+    };
+    let institution_id = match institution_id_from_user(&user) {
+        Ok(value) => value,
+        Err(code) => return (code, Json(ApiEnvelope::err("missing institution scope"))),
+    };
+
     let payload = match payload {
         Ok(Json(value)) => match parse_create_disclosure_request(&value) {
             Ok(parsed) => parsed,
@@ -103,8 +145,27 @@ async fn create(
         }
     };
 
-    match state.disclosure_repo.create(payload).await {
-        Ok(created) => (StatusCode::OK, Json(ApiEnvelope::ok(created))),
+    match state.disclosure_repo.create(institution_id, payload).await {
+        Ok(created) => {
+            let action = format!(
+                "disclosure_granted:id={}:asset_id={}:data_id={}:grantee={}:tx={}",
+                created.id,
+                created.asset_id,
+                created.data_id.as_deref().unwrap_or("none"),
+                created.grantee.as_deref().unwrap_or("none"),
+                created.tx_hash.as_deref().unwrap_or("none"),
+            );
+            let event = crate::audit_reporting::AuditEvent::from_request(
+                crate::audit_reporting::CreateAuditEventRequest::new(&user.username, &action),
+            );
+            let _ = state.audit_repo.push_event(institution_id, event).await;
+
+            (StatusCode::OK, Json(ApiEnvelope::ok(created)))
+        }
+        Err(sqlx::Error::RowNotFound) => (
+            StatusCode::FORBIDDEN,
+            Json(ApiEnvelope::err("asset is outside your institution scope")),
+        ),
         Err(err) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ApiEnvelope::err(format!(

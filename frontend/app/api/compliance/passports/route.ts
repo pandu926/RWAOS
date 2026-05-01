@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getWalletSessionFromCookieHeader } from "@/lib/web3/session";
+import { getWalletSessionTokenFromRequest } from "@/lib/web3/session";
 
 type CreatePassportRequest = {
   transfer_record_id: number;
@@ -12,6 +12,15 @@ type CreatePassportRequest = {
   transfer_tx_hash: string;
   anchor_tx_hash: string;
   reason: string;
+  onchain_metadata?: {
+    chain_id?: number;
+    transfer_id_onchain?: string;
+    transfer_tx_hash?: string;
+    anchor_tx_hash?: string;
+    policy_hash?: string;
+    disclosure_data_id?: string;
+    anchor_hash?: string;
+  };
 };
 
 function getBackendBaseUrl(): string {
@@ -35,7 +44,7 @@ function isTxHash(value: string): boolean {
 
 function parseCreatePassportRequest(input: unknown): CreatePassportRequest {
   const body = (input ?? {}) as Record<string, unknown>;
-  const transferRecordId = Number(body.transfer_record_id ?? body.transfer_id);
+  const transferRecordId = Number(body.transfer_record_id);
   const transferIdOnchain =
     typeof body.transfer_id_onchain === "string" ? body.transfer_id_onchain.trim() : "";
   const disclosureScope = Array.isArray(body.disclosure_scope)
@@ -47,6 +56,25 @@ function parseCreatePassportRequest(input: unknown): CreatePassportRequest {
   const transferTxHash = typeof body.transfer_tx_hash === "string" ? body.transfer_tx_hash.trim() : "";
   const anchorTxHash = typeof body.anchor_tx_hash === "string" ? body.anchor_tx_hash.trim() : "";
   const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+  const onchainCandidate =
+    body.onchain_metadata && typeof body.onchain_metadata === "object"
+      ? (body.onchain_metadata as Record<string, unknown>)
+      : null;
+  const onchainChainId = Number(onchainCandidate?.chain_id);
+  const onchainTransferId =
+    typeof onchainCandidate?.transfer_id_onchain === "string"
+      ? onchainCandidate.transfer_id_onchain.trim()
+      : "";
+  const onchainTransferTxHash =
+    typeof onchainCandidate?.transfer_tx_hash === "string" ? onchainCandidate.transfer_tx_hash.trim() : "";
+  const onchainAnchorTxHash =
+    typeof onchainCandidate?.anchor_tx_hash === "string" ? onchainCandidate.anchor_tx_hash.trim() : "";
+  const onchainPolicyHash =
+    typeof onchainCandidate?.policy_hash === "string" ? onchainCandidate.policy_hash.trim() : "";
+  const onchainDisclosureDataId =
+    typeof onchainCandidate?.disclosure_data_id === "string" ? onchainCandidate.disclosure_data_id.trim() : "";
+  const onchainAnchorHash =
+    typeof onchainCandidate?.anchor_hash === "string" ? onchainCandidate.anchor_hash.trim() : "";
 
   if (!Number.isInteger(transferRecordId) || transferRecordId <= 0) {
     throw new Error("`transfer_record_id` must be a positive integer.");
@@ -75,6 +103,29 @@ function parseCreatePassportRequest(input: unknown): CreatePassportRequest {
   if (!reason) {
     throw new Error("`reason` is required.");
   }
+  if (onchainCandidate) {
+    if (onchainCandidate.chain_id !== undefined && (!Number.isInteger(onchainChainId) || onchainChainId <= 0)) {
+      throw new Error("`onchain_metadata.chain_id` must be a positive integer when provided.");
+    }
+    if (onchainTransferId && !isBytes32(onchainTransferId)) {
+      throw new Error("`onchain_metadata.transfer_id_onchain` must be a bytes32 hex value when provided.");
+    }
+    if (onchainTransferTxHash && !isTxHash(onchainTransferTxHash)) {
+      throw new Error("`onchain_metadata.transfer_tx_hash` must be a valid transaction hash when provided.");
+    }
+    if (onchainAnchorTxHash && !isTxHash(onchainAnchorTxHash)) {
+      throw new Error("`onchain_metadata.anchor_tx_hash` must be a valid transaction hash when provided.");
+    }
+    if (onchainPolicyHash && !isBytes32(onchainPolicyHash)) {
+      throw new Error("`onchain_metadata.policy_hash` must be a bytes32 hex value when provided.");
+    }
+    if (onchainDisclosureDataId && !isBytes32(onchainDisclosureDataId)) {
+      throw new Error("`onchain_metadata.disclosure_data_id` must be a bytes32 hex value when provided.");
+    }
+    if (onchainAnchorHash && !isBytes32(onchainAnchorHash)) {
+      throw new Error("`onchain_metadata.anchor_hash` must be a bytes32 hex value when provided.");
+    }
+  }
 
   return {
     transfer_record_id: transferRecordId,
@@ -86,6 +137,19 @@ function parseCreatePassportRequest(input: unknown): CreatePassportRequest {
     transfer_tx_hash: transferTxHash,
     anchor_tx_hash: anchorTxHash,
     reason,
+    ...(onchainCandidate
+      ? {
+          onchain_metadata: {
+            ...(Number.isInteger(onchainChainId) && onchainChainId > 0 ? { chain_id: onchainChainId } : {}),
+            ...(onchainTransferId ? { transfer_id_onchain: onchainTransferId } : {}),
+            ...(onchainTransferTxHash ? { transfer_tx_hash: onchainTransferTxHash } : {}),
+            ...(onchainAnchorTxHash ? { anchor_tx_hash: onchainAnchorTxHash } : {}),
+            ...(onchainPolicyHash ? { policy_hash: onchainPolicyHash } : {}),
+            ...(onchainDisclosureDataId ? { disclosure_data_id: onchainDisclosureDataId } : {}),
+            ...(onchainAnchorHash ? { anchor_hash: onchainAnchorHash } : {}),
+          },
+        }
+      : {}),
   };
 }
 
@@ -98,7 +162,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: message }, { status: 400 });
   }
 
-  const token = getWalletSessionFromCookieHeader(request.headers.get("cookie"))?.token;
+  const token = getWalletSessionTokenFromRequest(request);
   if (!token) {
     return NextResponse.json(
       { success: false, error: "Missing wallet session token. Please reconnect wallet." },
@@ -123,6 +187,7 @@ export async function POST(request: Request) {
         transfer_tx_hash: payload.transfer_tx_hash,
         anchor_tx_hash: payload.anchor_tx_hash,
         reason: payload.reason,
+        ...(payload.onchain_metadata ? { onchain_metadata: payload.onchain_metadata } : {}),
       }),
       cache: "no-store",
     });

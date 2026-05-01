@@ -13,7 +13,9 @@ export default async function AssetsPage() {
   const restrictedAssets = assets.filter((asset) => asset.status === "Restricted").length;
   const averageYield =
     assets.reduce((sum, asset) => sum + asset.yield, 0) / Math.max(assets.length, 1);
-  const totalAum = assets.reduce((sum, asset) => sum + asset.confidentialAum, 0);
+  const ownerVisibleAum = assets
+    .filter((asset) => asset.aumVisibility === "Visible to owner")
+    .reduce((sum, asset) => sum + asset.confidentialAum, 0);
 
   return (
     <div className="space-y-6">
@@ -47,9 +49,11 @@ export default async function AssetsPage() {
         </SectionCard>
         <SectionCard title="Confidential AUM">
           <p className="text-3xl font-semibold tracking-tight text-foreground">
-            {formatCompactNumber(totalAum)}
+            {ownerVisibleAum > 0 ? formatCompactNumber(ownerVisibleAum) : "Encrypted"}
           </p>
-          <p className="mt-2 text-sm text-muted">Aggregated, restricted view</p>
+          <p className="mt-2 text-sm text-muted">
+            {ownerVisibleAum > 0 ? "Visible to connected tenant owner" : "Disclosure-gated amount data"}
+          </p>
         </SectionCard>
       </div>
 
@@ -75,7 +79,7 @@ export default async function AssetsPage() {
               <th className="px-6 py-4">Type</th>
               <th className="px-6 py-4">Issuer</th>
               <th className="px-6 py-4">Holders</th>
-              <th className="px-6 py-4">AUM</th>
+              <th className="px-6 py-4">Confidential AUM</th>
               <th className="px-6 py-4">Yield</th>
               <th className="px-6 py-4">Status</th>
             </tr>
@@ -93,7 +97,7 @@ export default async function AssetsPage() {
                 <td className="px-6 py-5 text-sm text-foreground">{asset.issuer}</td>
                 <td className="px-6 py-5 text-sm text-foreground">{asset.holdersCount}</td>
                 <td className="px-6 py-5 text-sm font-semibold text-foreground">
-                  {formatCurrency(asset.confidentialAum)}
+                  {asset.aumVisibility === "Visible to owner" ? formatCurrency(asset.confidentialAum) : "Encrypted payload"}
                 </td>
                 <td className="px-6 py-5 text-sm text-foreground">
                   {formatPercentage(asset.yield)}

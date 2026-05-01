@@ -30,22 +30,22 @@ export default function SettingsPage() {
   const roleRows = [
     {
       name: "Admin",
-      description: "Configuration and governance access (server allowlist).",
+      description: "Configuration and governance access (role override when explicitly mapped).",
       members: adminWallets.length,
     },
     {
       name: "Operator",
-      description: "Transfer and asset operations (server allowlist).",
+      description: "Transfer and asset operations (role override when explicitly mapped).",
       members: operatorWallets.length,
     },
     {
       name: "Auditor",
-      description: "Read/audit scope (server allowlist).",
+      description: "Read/audit scope (role override when explicitly mapped).",
       members: auditorWallets.length,
     },
     {
-      name: "Public allowlist",
-      description: "Optional frontend wallet gate from NEXT_PUBLIC_ALLOWED_WALLETS.",
+      name: "Legacy public env list",
+      description: "Legacy environment list. Open signup mode does not require this gate.",
       members: publicAllowedWallets.length,
     },
   ];
@@ -166,6 +166,11 @@ export default function SettingsPage() {
 
           <SectionCard title="On-chain deployment" description="Arbitrum Sepolia contracts and ABI integration state for frontend runtime.">
             <div className="space-y-4">
+              <InlineNotice
+                title="Runtime source of truth"
+                description="Core disclosure, transfer, passport, and asset flows now resolve contract addresses from the tenant-owned bundle saved during onboarding. The addresses below are only the frontend ABI/env baseline."
+                tone="neutral"
+              />
               <div className="grid gap-3 rounded-2xl border border-border bg-surface-soft p-4 sm:grid-cols-2">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-muted">Chain ID</p>

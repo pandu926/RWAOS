@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getWalletSessionFromCookieHeader } from "@/lib/web3/session";
+import { getWalletSessionTokenFromRequest } from "@/lib/web3/session";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -11,6 +11,7 @@ type ApiEnvelope<T> = {
 type BackendAsset = {
   id: number;
   name: string;
+  issuance_wallet?: string | null;
 };
 
 type BackendInvestor = {
@@ -26,6 +27,7 @@ type BackendTransfer = {
   to_investor_id: number;
   amount: number;
   tx_hash?: string | null;
+  status?: string | null;
 };
 
 function getBackendBaseUrl(): string {
@@ -61,7 +63,7 @@ async function fetchList<T>(url: string, token: string): Promise<T[]> {
 }
 
 export async function GET(request: Request) {
-  const token = getWalletSessionFromCookieHeader(request.headers.get("cookie"))?.token;
+  const token = getWalletSessionTokenFromRequest(request);
   if (!token) {
     return NextResponse.json(
       { success: false, error: "Missing wallet session token. Please reconnect wallet." },
@@ -94,7 +96,11 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       data: {
-        assets: assets.map((asset) => ({ id: asset.id, name: asset.name })),
+        assets: assets.map((asset) => ({
+          id: asset.id,
+          name: asset.name,
+          issuance_wallet: asset.issuance_wallet?.trim() || null,
+        })),
         investors: investors.map((investor) => ({
           id: investor.id,
           name: investor.legal_name,
@@ -115,6 +121,7 @@ export async function GET(request: Request) {
             to_investor_wallet_address: toInvestor?.wallet_address?.trim() || null,
             amount: transfer.amount,
             tx_hash: transfer.tx_hash?.trim() || null,
+            status: transfer.status?.trim().toLowerCase() || null,
           };
         }),
       },

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getWalletSessionFromCookieHeader } from "@/lib/web3/session";
+import { getWalletSessionTokenFromRequest } from "@/lib/web3/session";
 
 type CreateInvestorRequest = {
   legal_name: string;
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = getWalletSessionFromCookieHeader(request.headers.get("cookie"))?.token;
+  const token = getWalletSessionTokenFromRequest(request);
   if (!token) {
     return NextResponse.json(
       { success: false, error: "Missing wallet session token. Please reconnect wallet." },

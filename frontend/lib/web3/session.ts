@@ -1,5 +1,7 @@
 export const WALLET_SESSION_COOKIE = "rwaos_wallet_session";
+export const TARGET_CHAIN_ID = 421614;
 const DEFAULT_MAX_AGE_SECONDS = 60 * 60 * 24;
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 
 export type WalletSession = {
   address: string;
@@ -18,17 +20,60 @@ function isLikelyEvmAddress(value: string): boolean {
 }
 
 export function isAllowedWallet(address: string): boolean {
-  const configured = process.env.NEXT_PUBLIC_ALLOWED_WALLETS?.trim() ?? "";
-  if (!configured) {
-    return true;
+  // Open signup mode: any valid wallet can start a tenant session.
+  return isLikelyEvmAddress(address);
+}
+
+function appendWalletCsv(target: Set<string>, csv: string | undefined) {
+  if (!csv?.trim()) {
+    return;
   }
+  for (const item of csv.split(",").map((entry) => normalizeAddress(entry)).filter(Boolean)) {
+    target.add(item);
+  }
+}
 
-  const allowlist = configured
-    .split(",")
-    .map((item) => normalizeAddress(item))
-    .filter(Boolean);
+export function getAllowlistedWalletsFromEnv(): Set<string> {
+  const wallets = new Set<string>();
+  appendWalletCsv(wallets, process.env.NEXT_PUBLIC_ALLOWED_WALLETS);
+  appendWalletCsv(wallets, process.env.AUTH_ADMIN_WALLETS);
+  appendWalletCsv(wallets, process.env.AUTH_OPERATOR_WALLETS);
+  appendWalletCsv(wallets, process.env.AUTH_AUDITOR_WALLETS);
+  return wallets;
+}
 
-  return allowlist.includes(normalizeAddress(address));
+function isLikelySessionToken(token: WalletSession["token"]): boolean {
+  if (typeof token !== "string") {
+    return false;
+  }
+  return token.trim().length > 0;
+}
+
+export function validateWalletSession(session: WalletSession | null): boolean {
+  if (!session) {
+    return false;
+  }
+  if (!isLikelyEvmAddress(session.address)) {
+    return false;
+  }
+  if (!Number.isFinite(session.chainId) || session.chainId !== TARGET_CHAIN_ID) {
+    return false;
+  }
+  if (!session.connectedAt || !ISO_DATE_RE.test(session.connectedAt) || Number.isNaN(Date.parse(session.connectedAt))) {
+    return false;
+  }
+  if (!isLikelySessionToken(session.token)) {
+    return false;
+  }
+  return true;
+}
+
+export function getWalletSessionToken(session: WalletSession | null): string | null {
+  if (!session?.token) {
+    return null;
+  }
+  const token = session.token.trim();
+  return token.length > 0 ? token : null;
 }
 
 export function serializeWalletSession(value: WalletSession): string {
@@ -42,7 +87,7 @@ export function parseWalletSession(serialized: string | null | undefined): Walle
 
   try {
     const parsed = JSON.parse(decodeURIComponent(serialized)) as WalletSession;
-    if (!isLikelyEvmAddress(parsed.address) || !Number.isFinite(parsed.chainId)) {
+    if (!validateWalletSession(parsed)) {
       return null;
     }
     return parsed;
@@ -64,6 +109,27 @@ export function getWalletSessionFromCookieHeader(cookieHeader: string | null): W
 
   const serialized = target.slice(WALLET_SESSION_COOKIE.length + 1);
   return parseWalletSession(serialized);
+}
+
+function tokenFromAuthorizationHeader(authorizationHeader: string | null): string | null {
+  if (!authorizationHeader) {
+    return null;
+  }
+  const [scheme, ...rest] = authorizationHeader.trim().split(/\s+/);
+  if (!scheme || scheme.toLowerCase() !== "bearer") {
+    return null;
+  }
+  const token = rest.join(" ").trim();
+  return token.length > 0 ? token : null;
+}
+
+export function getWalletSessionTokenFromRequest(request: Request): string | null {
+  const bearerToken = tokenFromAuthorizationHeader(request.headers.get("authorization"));
+  if (bearerToken) {
+    return bearerToken;
+  }
+  const cookieToken = getWalletSessionFromCookieHeader(request.headers.get("cookie"))?.token?.trim();
+  return cookieToken && cookieToken.length > 0 ? cookieToken : null;
 }
 
 export function getWalletSessionFromDocumentCookie(): WalletSession | null {

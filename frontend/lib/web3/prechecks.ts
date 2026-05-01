@@ -3,6 +3,7 @@ import { isAddress, type Address, type Hex } from "viem";
 import { web3PublicClient } from "@/lib/web3/client";
 import { contractAddresses } from "@/lib/web3/contracts";
 import { decodeTransferControllerError, type DecodedContractError } from "@/lib/web3/errors";
+import type { TenantBundleRuntime } from "@/lib/web3/tenant-contract-runtime";
 
 const disclosureRegistryReadAbi = [
   {
@@ -77,10 +78,21 @@ export type ReadinessItem = {
   detail: string;
 };
 
+export type TenantRuntimePrecheckStatus = {
+  ok: boolean;
+  summary: string;
+  detail: string;
+  action: string;
+  missing: string[];
+  invalid: string[];
+};
+
 type TransferPrecheckParams = {
   disclosureDataId: Hex;
   caller: Address;
   from: Address;
+  tokenAddress?: Address;
+  disclosureRegistry?: Address;
   transferController?: Address;
 };
 
@@ -142,17 +154,18 @@ function invalidAddressStatus(
 export async function hasDisclosure(
   disclosureDataId: Hex,
   caller: Address,
+  disclosureRegistry: Address = contractAddresses.disclosureRegistry,
 ): Promise<DisclosurePrecheckStatus> {
   if (!isBytes32(disclosureDataId)) {
     return invalidDisclosureStatus(disclosureDataId, caller);
   }
-  if (!isAddress(caller)) {
+  if (!isAddress(caller) || !isAddress(disclosureRegistry)) {
     return invalidAddressStatus("disclosure", disclosureDataId, caller);
   }
 
   try {
     const active = await web3PublicClient.readContract({
-      address: contractAddresses.disclosureRegistry,
+      address: disclosureRegistry,
       abi: disclosureRegistryReadAbi,
       functionName: "hasDisclosure",
       args: [disclosureDataId, caller],
@@ -205,14 +218,15 @@ export async function hasDisclosure(
 export async function isOperator(
   from: Address,
   transferController: Address = contractAddresses.transferController,
+  tokenAddress: Address = contractAddresses.confidentialRwaToken,
 ): Promise<OperatorPrecheckStatus> {
-  if (!isAddress(from) || !isAddress(transferController)) {
+  if (!isAddress(from) || !isAddress(transferController) || !isAddress(tokenAddress)) {
     return invalidAddressStatus("operator", from, transferController);
   }
 
   try {
     const active = await web3PublicClient.readContract({
-      address: contractAddresses.confidentialRwaToken,
+      address: tokenAddress,
       abi: confidentialRwaTokenReadAbi,
       functionName: "isOperator",
       args: [from, transferController],
@@ -266,11 +280,13 @@ export async function getTransferPrecheckStatus({
   disclosureDataId,
   caller,
   from,
+  tokenAddress = contractAddresses.confidentialRwaToken,
+  disclosureRegistry = contractAddresses.disclosureRegistry,
   transferController = contractAddresses.transferController,
 }: TransferPrecheckParams): Promise<TransferPrecheckStatus> {
   const [disclosure, operator] = await Promise.all([
-    hasDisclosure(disclosureDataId, caller),
-    isOperator(from, transferController),
+    hasDisclosure(disclosureDataId, caller, disclosureRegistry),
+    isOperator(from, transferController, tokenAddress),
   ]);
 
   const ok = disclosure.ok && operator.ok;
@@ -318,4 +334,73 @@ export function getTransferReadinessItems(status: TransferPrecheckStatus | null)
       detail: status.checks.operator.action || status.checks.operator.summary,
     },
   ];
+}
+
+export function getTenantRuntimePrecheckStatus(
+  runtime: TenantBundleRuntime | null,
+  targetChainId: number,
+): TenantRuntimePrecheckStatus {
+  if (!runtime) {
+    return {
+      ok: false,
+      summary: "Tenant runtime has not loaded yet.",
+      detail: "The app is still fetching the tenant-owned contract bundle.",
+      action: "Wait for tenant runtime to load before running confidential actions.",
+      missing: ["tenant bundle"],
+      invalid: [],
+    };
+  }
+
+  if (runtime.state === "error") {
+    return {
+      ok: false,
+      summary: "Tenant runtime could not be resolved.",
+      detail: runtime.error ?? "Tenant bundle fetch failed.",
+      action: "Fix the tenant runtime API/config and reload the page.",
+      missing: [],
+      invalid: ["tenant runtime"],
+    };
+  }
+
+  if (runtime.state === "missing" || !runtime.bundle) {
+    return {
+      ok: false,
+      summary: "Tenant bundle is not configured for this institution.",
+      detail: "Core NOX/confidential flows require a saved tenant-owned contract bundle.",
+      action: "Complete onboarding and save the tenant bundle first.",
+      missing: ["tenant bundle"],
+      invalid: [],
+    };
+  }
+
+  if (runtime.bundle.chainId !== targetChainId) {
+    return {
+      ok: false,
+      summary: "Tenant bundle is saved for the wrong chain.",
+      detail: `Bundle chain ID ${runtime.bundle.chainId} does not match required ${targetChainId}.`,
+      action: "Re-deploy or re-save the tenant bundle on the correct chain.",
+      missing: [],
+      invalid: ["chain_id"],
+    };
+  }
+
+  if (runtime.bundle.mode !== "tenant-factory") {
+    return {
+      ok: false,
+      summary: "Managed global tenant bundle is not allowed for the core demo flow.",
+      detail: "Confidential transfer, disclosure, and passport flows require a tenant-owned bundle deployed from TenantFactory.",
+      action: "Redeploy the tenant bundle from onboarding using the institution wallet, then save it again.",
+      missing: [],
+      invalid: ["deployment_mode"],
+    };
+  }
+
+  return {
+    ok: true,
+    summary: "Tenant runtime contract bundle is ready.",
+    detail: "Tenant-owned token, registry, controller, and audit contracts are available for this chain.",
+    action: "Runtime pre-check passed.",
+    missing: [],
+    invalid: [],
+  };
 }

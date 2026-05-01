@@ -6,6 +6,12 @@ import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+function formatTransferAmount(transfer: { amount: number; amountVisibility: string }) {
+  return transfer.amountVisibility.startsWith("Visible")
+    ? formatCurrency(transfer.amount)
+    : "Encrypted payload";
+}
+
 export default async function DashboardPage() {
   const {
     metrics: dashboardMetrics,
@@ -30,6 +36,9 @@ export default async function DashboardPage() {
         meta={<StatusBadge tone={healthStatus === "Live data" ? "success" : "warning"}>{healthStatus}</StatusBadge>}
         actions={
           <>
+            <Button href="/onboarding" variant="secondary">
+              Deploy tenant bundle
+            </Button>
             <Button href="/disclosures" variant="secondary">
               Review disclosures
             </Button>
@@ -43,6 +52,13 @@ export default async function DashboardPage() {
         description={`Transfers: ${transfers.length}. Audit events: ${auditEvents.length}. Latest audit timestamp: ${latestAuditAt}.`}
         tone="neutral"
         icon="alert"
+      />
+
+      <InlineNotice
+        title="New institution setup"
+        description="Open Onboarding first to deploy your tenant-owned contract bundle from your wallet, save runtime addresses, and complete setup transactions before creating assets."
+        tone="accent"
+        icon="sparkles"
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -109,7 +125,7 @@ export default async function DashboardPage() {
               <tr>
                 <th className="px-6 py-4">Transfer</th>
                 <th className="px-6 py-4">Asset</th>
-                <th className="px-6 py-4">Amount</th>
+                <th className="px-6 py-4">Confidential amount</th>
                 <th className="px-6 py-4">Visibility</th>
                 <th className="px-6 py-4">Status</th>
               </tr>
@@ -123,7 +139,7 @@ export default async function DashboardPage() {
                   </td>
                   <td className="px-6 py-4 text-sm text-foreground">{transfer.assetName}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-foreground">
-                    {formatCurrency(transfer.amount)}
+                    {formatTransferAmount(transfer)}
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge tone="neutral">{transfer.amountVisibility}</StatusBadge>

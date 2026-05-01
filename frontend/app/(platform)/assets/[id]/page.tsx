@@ -5,9 +5,14 @@ import { assetTone, disclosureTone, transferTone } from "@/lib/site-data";
 import { getAssets, getDisclosures, getTransfers } from "@/lib/api";
 import { Button, DetailList, InlineNotice, PageHeader, SectionCard, StatusBadge, SurfaceTable } from "@/components/ui";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
-import { contractAddresses } from "@/lib/web3/contracts";
 
 export const dynamic = "force-dynamic";
+
+function formatTransferAmount(transfer: { amount: number; amountVisibility: string }) {
+  return transfer.amountVisibility.startsWith("Visible")
+    ? formatCurrency(transfer.amount)
+    : "Encrypted payload";
+}
 
 export default async function AssetDetailPage({
   params,
@@ -63,9 +68,11 @@ export default async function AssetDetailPage({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SectionCard title="Confidential AUM">
           <p className="text-3xl font-semibold tracking-tight text-foreground">
-            {formatCurrency(asset.confidentialAum)}
+            {asset.aumVisibility === "Visible to owner" ? formatCurrency(asset.confidentialAum) : "Encrypted"}
           </p>
-          <p className="mt-2 text-sm text-muted">From transfer records for this asset</p>
+          <p className="mt-2 text-sm text-muted">
+            {asset.aumVisibility === "Visible to owner" ? "Visible to connected tenant owner" : "Visible only through approved disclosure scope"}
+          </p>
         </SectionCard>
         <SectionCard title="Transfers tracked">
           <p className="text-3xl font-semibold tracking-tight text-foreground">
@@ -109,9 +116,15 @@ export default async function AssetDetailPage({
               { label: "Issuer", value: asset.issuer },
               { label: "Jurisdiction", value: asset.jurisdiction },
               { label: "Last activity", value: asset.lastActivity },
+              { label: "Issuance wallet", value: asset.issuanceWallet ? <code className="rounded bg-surface-soft px-2 py-1 font-mono text-xs">{asset.issuanceWallet}</code> : "Not recorded" },
+              { label: "Initial supply", value: asset.initialSupply ?? "Not recorded" },
+              { label: "Metadata URI", value: asset.metadataUri ? <code className="rounded bg-surface-soft px-2 py-1 font-mono text-xs">{asset.metadataUri}</code> : "Not recorded" },
+              { label: "Anchor hash", value: asset.anchorHash ? <code className="rounded bg-surface-soft px-2 py-1 font-mono text-xs">{asset.anchorHash}</code> : "Not recorded" },
+              { label: "Anchor tx hash", value: asset.anchorTxHash ? <code className="rounded bg-surface-soft px-2 py-1 font-mono text-xs">{asset.anchorTxHash}</code> : "Not recorded" },
+              { label: "Issuance tx hash", value: asset.issuanceTxHash ? <code className="rounded bg-surface-soft px-2 py-1 font-mono text-xs">{asset.issuanceTxHash}</code> : "Not recorded" },
               {
-                label: "Token contract",
-                value: <code className="rounded bg-surface-soft px-2 py-1 font-mono text-xs">{contractAddresses.confidentialRwaToken}</code>,
+                label: "Contract runtime",
+                value: "Resolved from the tenant-owned bundle during onboarding and transfer flows.",
               },
             ]}
           />
@@ -126,7 +139,7 @@ export default async function AssetDetailPage({
                 <th className="px-6 py-4">Transfer</th>
                 <th className="px-6 py-4">From</th>
                 <th className="px-6 py-4">To</th>
-                <th className="px-6 py-4">Amount</th>
+                <th className="px-6 py-4">Confidential amount</th>
                 <th className="px-6 py-4">Status</th>
               </tr>
             </thead>
@@ -140,7 +153,7 @@ export default async function AssetDetailPage({
                   <td className="px-6 py-4 text-sm text-foreground">{transfer.from}</td>
                   <td className="px-6 py-4 text-sm text-foreground">{transfer.to}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-foreground">
-                    {formatCurrency(transfer.amount)}
+                    {formatTransferAmount(transfer)}
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge tone={transferTone(transfer.status)}>{transfer.status}</StatusBadge>

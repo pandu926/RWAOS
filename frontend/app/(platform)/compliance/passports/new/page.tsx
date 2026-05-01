@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { isAddress, isHex, type Address } from "viem";
+import { isAddress, isHex, type Address, type Hex } from "viem";
 import { useAccount, useChainId, useSwitchChain, useWalletClient, useWriteContract } from "wagmi";
 
 import {
@@ -13,9 +13,13 @@ import {
   type OptionalWeb3FlowAdapter,
 } from "@/app/_lib/onchain-flow";
 import { Button, DetailList, InlineNotice, PageHeader, SectionCard, StatusBadge } from "@/components/ui";
-import { contractAddresses, getContractAbi } from "@/lib/web3/contracts";
+import { web3PublicClient } from "@/lib/web3/client";
+import { getContractAbi } from "@/lib/web3/contracts";
+import { computePassportAnchorHash, computePassportPolicyHash, computeTransferIdOnchain } from "@/lib/web3/domain-hashes";
 import { decodeTransferControllerError } from "@/lib/web3/errors";
 import { createViemWalletClientProofAdapter, generateEncryptedAmountAndProof, getProofReadinessItems } from "@/lib/web3/proof";
+import { fetchTenantBundleRuntime, type TenantBundleRuntime } from "@/lib/web3/tenant-contract-runtime";
+import { getTenantRuntimePrecheckStatus } from "@/lib/web3/prechecks";
 
 type Envelope = { success: boolean; error?: string | null };
 
@@ -38,6 +42,19 @@ type OptionsEnvelope = {
       tx_hash?: string | null;
     }>;
   };
+  error?: string | null;
+};
+
+type DisclosureOptionsEnvelope = {
+  success: boolean;
+  data?: Array<{
+    id: number;
+    asset_id: number;
+    title: string;
+    data_id?: string | null;
+    grantee?: string | null;
+    expires_at?: number | null;
+  }>;
   error?: string | null;
 };
 
@@ -72,22 +89,22 @@ export default function NewPassportPage() {
   const { writeContractAsync } = useWriteContract();
 
   const [transferOptions, setTransferOptions] = useState<NonNullable<OptionsEnvelope["data"]>["transfers"]>([]);
+  const [disclosureOptions, setDisclosureOptions] = useState<NonNullable<DisclosureOptionsEnvelope["data"]>>([]);
   const [transferRecordId, setTransferRecordId] = useState("");
-  const [transferIdOnchainOverride, setTransferIdOnchainOverride] = useState("");
-  const [policyHash, setPolicyHash] = useState("");
   const [disclosureDataId, setDisclosureDataId] = useState("");
-  const [anchorHash, setAnchorHash] = useState("");
-  const [toAddressOverride, setToAddressOverride] = useState("");
   const [encryptedAmount, setEncryptedAmount] = useState("");
-  const [inputProof, setInputProof] = useState("0x");
+  const [inputProof, setInputProof] = useState("");
   const [scope, setScope] = useState("auditor,regulator,counterparty");
-  const [reason, setReason] = useState("Manual issuance");
+  const [reason, setReason] = useState("Routine compliance issuance");
   const [busy, setBusy] = useState(false);
   const [proofGenerating, setProofGenerating] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [result, setResult] = useState<PassportResult | null>(null);
+  const [proofForKey, setProofForKey] = useState<string | null>(null);
+  const [tenantRuntime, setTenantRuntime] = useState<TenantBundleRuntime | null>(null);
+  const [currentUnix] = useState(() => Math.floor(Date.now() / 1000));
 
   const hasWallet = Boolean(address);
   const onTargetChain = chainId === TARGET_CHAIN_ID;
@@ -97,13 +114,20 @@ export default function NewPassportPage() {
   const sourceWalletValid = isAddress(sourceWalletTrimmed);
   const sourceMatchesConnectedWallet =
     Boolean(address && sourceWalletValid && address.toLowerCase() === sourceWalletTrimmed.toLowerCase());
-  const transferIdOnchain = transferIdOnchainOverride.trim();
-  const toAddress = toAddressOverride || selectedTransfer?.to_investor_wallet_address || "";
+  const toAddress = selectedTransfer?.to_investor_wallet_address || "";
   const transferRecordIdNumber = parsePositiveInteger(transferRecordId);
+  const selectedTransferTxHash = selectedTransfer?.tx_hash?.trim() ?? "";
+  const selectedTransferTxHashValid = isBytes32Hex(selectedTransferTxHash);
+  const transferIdOnchain =
+    transferRecordIdNumber && selectedTransferTxHashValid
+      ? computeTransferIdOnchain({
+          chainId: TARGET_CHAIN_ID,
+          transferRecordId: transferRecordIdNumber,
+          transferTxHash: selectedTransferTxHash as Hex,
+        })
+      : "";
   const transferIdOnchainValid = isBytes32Hex(transferIdOnchain);
-  const policyHashValid = isBytes32Hex(policyHash.trim());
   const disclosureDataIdValid = isBytes32Hex(disclosureDataId.trim());
-  const anchorHashValid = isBytes32Hex(anchorHash.trim());
   const toAddressTrimmed = toAddress.trim();
   const toAddressValid = isAddress(toAddressTrimmed);
   const encryptedAmountTrimmed = encryptedAmount.trim();
@@ -112,6 +136,15 @@ export default function NewPassportPage() {
   const inputProofValid = isHex(inputProofTrimmed);
   const selectedTransferAmount = selectedTransfer ? String(selectedTransfer.amount).trim() : "";
   const selectedTransferAmountBigInt = /^\d+$/.test(selectedTransferAmount) ? BigInt(selectedTransferAmount) : null;
+  const proofInputKey =
+    hasWallet && onTargetChain && selectedTransferAmountBigInt !== null
+      ? `${address?.toLowerCase()}:${TARGET_CHAIN_ID}:${selectedTransferAmountBigInt.toString()}`
+      : null;
+  const proofReadyForInput =
+    Boolean(proofInputKey) &&
+    proofForKey === proofInputKey &&
+    encryptedAmountValid &&
+    inputProofValid;
   const proofAdapter = useMemo(() => createViemWalletClientProofAdapter(walletClient), [walletClient]);
   const proofReadiness = getProofReadinessItems({
     hasWallet,
@@ -119,6 +152,42 @@ export default function NewPassportPage() {
     amountValid: Boolean(selectedTransferAmountBigInt && selectedTransferAmountBigInt > BigInt(0)),
     adapterReady: Boolean(proofAdapter),
   });
+  const activeDisclosureOptions = disclosureOptions
+    .filter((item) => item.data_id)
+    .filter((item) => !selectedTransfer || item.asset_id === selectedTransfer.asset_id)
+    .filter((item) => !item.expires_at || item.expires_at > currentUnix)
+    .filter((item) => !item.grantee || !sourceWalletValid || item.grantee.toLowerCase() === sourceWalletTrimmed.toLowerCase());
+  const effectiveDisclosureDataId = disclosureDataId || activeDisclosureOptions[0]?.data_id || "";
+  const scopeNormalized = scope
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join(",");
+  const policyHash =
+    transferRecordIdNumber && isBytes32Hex(effectiveDisclosureDataId)
+      ? computePassportPolicyHash({
+          chainId: TARGET_CHAIN_ID,
+          transferRecordId: transferRecordIdNumber,
+          disclosureDataId: effectiveDisclosureDataId as Hex,
+          disclosureScope: scopeNormalized,
+        })
+      : "";
+  const policyHashValid = isBytes32Hex(policyHash);
+  const anchorHash =
+    transferIdOnchainValid && isBytes32Hex(effectiveDisclosureDataId) && policyHashValid
+      ? computePassportAnchorHash({
+          transferIdOnchain: transferIdOnchain as Hex,
+          policyHash: policyHash as Hex,
+          disclosureDataId: effectiveDisclosureDataId as Hex,
+          reason: reason.trim(),
+        })
+      : "";
+  const anchorHashValid = isBytes32Hex(anchorHash);
+  const runtimeContracts = tenantRuntime?.bundle?.contracts ?? null;
+  const runtimePrecheck = useMemo(
+    () => getTenantRuntimePrecheckStatus(tenantRuntime, TARGET_CHAIN_ID),
+    [tenantRuntime],
+  );
   const formReady =
     Boolean(transferRecordIdNumber) &&
     transferIdOnchainValid &&
@@ -126,8 +195,8 @@ export default function NewPassportPage() {
     disclosureDataIdValid &&
     anchorHashValid &&
     toAddressValid &&
-    encryptedAmountValid &&
-    inputProofValid;
+    proofReadyForInput &&
+    runtimePrecheck.ok;
   const readinessItems = [
     {
       label: "Sender wallet",
@@ -145,14 +214,19 @@ export default function NewPassportPage() {
       detail: transferRecordIdNumber ? "Backend transfer record selected." : "Select transfer record from backend first.",
     },
     {
-      label: "Transfer ID on-chain",
+      label: "Contract transfer ID",
       ready: transferIdOnchainValid,
-      detail: transferIdOnchainValid ? "Bytes32 on-chain transfer ID is valid." : "Provide bytes32 transfer ID for the contract call.",
+      detail: transferIdOnchainValid ? "Domain bytes32 derived from backend record ID and confirmed transfer tx hash." : "Selected transfer must already have a transfer tx hash.",
     },
     {
       label: "Recipient wallet",
       ready: toAddressValid,
-      detail: toAddressValid ? "Recipient wallet is valid." : "Use mapped recipient wallet or enter valid address.",
+      detail: toAddressValid ? "Recipient wallet is valid." : "Selected transfer recipient needs a valid mapped wallet.",
+    },
+    {
+      label: "Disclosure selection",
+      ready: isBytes32Hex(effectiveDisclosureDataId),
+      detail: isBytes32Hex(effectiveDisclosureDataId) ? "Disclosure data ID is resolved from a live tenant disclosure record." : "Select an active disclosure for this transfer asset and sender wallet.",
     },
     {
       label: "Hashes",
@@ -164,61 +238,94 @@ export default function NewPassportPage() {
     },
     {
       label: "Proof payload",
-      ready: encryptedAmountValid && inputProofValid,
+      ready: proofReadyForInput,
       detail:
-        encryptedAmountValid && inputProofValid
+        proofReadyForInput
           ? "Encrypted amount and input proof are ready."
-          : "Generate or paste a valid NOX encrypted amount and proof.",
+          : "Browser-generated NOX proof is required for current transfer amount.",
+    },
+    {
+      label: "Tenant runtime",
+      ready: runtimePrecheck.ok,
+      detail: runtimePrecheck.ok ? runtimePrecheck.detail : `${runtimePrecheck.summary} ${runtimePrecheck.detail}`,
     },
   ];
-  const passportFlowAdapter = useMemo<OptionalWeb3FlowAdapter<PassportPrecheckInput> | undefined>(() => {
-    return {
-      precheck(input) {
-        if (!sourceWalletValid) {
-          throw new Error("Selected transfer record is missing a valid sender wallet mapping.");
-        }
-        if (!sourceMatchesConnectedWallet) {
-          throw new Error("Connect the sender wallet from the selected transfer record before issuing the passport.");
-        }
-        return input;
-      },
-      decodeError(submitError, fallbackMessage) {
-        const decoded = decodeTransferControllerError(submitError);
-        return decoded.code === "UNKNOWN"
-          ? decodeWeb3FlowError(submitError, fallbackMessage)
-          : [decoded.message, decoded.action].filter(Boolean).join(" ");
-      },
-    };
-  }, [sourceMatchesConnectedWallet, sourceWalletValid]);
+  const passportFlowAdapter: OptionalWeb3FlowAdapter<PassportPrecheckInput> | undefined = {
+    precheck(input) {
+      if (!sourceWalletValid) {
+        throw new Error("Selected transfer record is missing a valid sender wallet mapping.");
+      }
+      if (!sourceMatchesConnectedWallet) {
+        throw new Error("Connect the sender wallet from the selected transfer record before issuing the passport.");
+      }
+      return input;
+    },
+    decodeError(submitError, fallbackMessage) {
+      const decoded = decodeTransferControllerError(submitError);
+      return decoded.code === "UNKNOWN"
+        ? decodeWeb3FlowError(submitError, fallbackMessage)
+        : [decoded.message, decoded.action].filter(Boolean).join(" ");
+    },
+  };
 
-  const transferHint = useMemo(() => {
-    if (!selectedTransfer) {
-      return "Select a backend transfer record first. The on-chain transfer ID stays separate and can be overridden if needed.";
+  const transferHint = !selectedTransfer
+    ? "Select a backend transfer record first. The contract transfer ID stays separate from the DB record."
+    : `Backend transfer record #${selectedTransfer.id} maps ${selectedTransfer.from_investor_name} -> ${selectedTransfer.to_investor_name}.${selectedTransfer.tx_hash ? ` Existing transfer tx: ${selectedTransfer.tx_hash}.` : " No transfer tx hash is stored on the backend record yet."}`;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadTenantRuntime() {
+      const runtime = await fetchTenantBundleRuntime();
+      if (!active) {
+        return;
+      }
+      setTenantRuntime(runtime);
     }
-    const txLabel = selectedTransfer.tx_hash ? ` Existing transfer tx: ${selectedTransfer.tx_hash}.` : " No transfer tx hash is stored on the backend record yet.";
-    return `Backend transfer record #${selectedTransfer.id} maps ${selectedTransfer.from_investor_name} -> ${selectedTransfer.to_investor_name}.${txLabel}`;
-  }, [selectedTransfer]);
+
+    void loadTenantRuntime();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
     async function load() {
       setLoadingOptions(true);
       try {
-        const response = await fetch("/api/transfer-form-options", { cache: "no-store" });
-        const payload = (await response.json()) as OptionsEnvelope;
-        if (!response.ok || !payload.success || !payload.data) {
+        const [optionsResponse, disclosuresResponse] = await Promise.all([
+          fetch("/api/transfer-form-options", { cache: "no-store" }),
+          fetch("/api/disclosures", { cache: "no-store" }),
+        ]);
+        const payload = (await optionsResponse.json()) as OptionsEnvelope;
+        const disclosuresPayload = (await disclosuresResponse.json()) as DisclosureOptionsEnvelope;
+        if (!optionsResponse.ok || !payload.success || !payload.data) {
           throw new Error(payload.error || "Failed to load passport form options.");
+        }
+        if (!disclosuresResponse.ok || !disclosuresPayload.success || !disclosuresPayload.data) {
+          throw new Error(disclosuresPayload.error || "Failed to load disclosure options.");
         }
         if (!active) {
           return;
         }
         setTransferOptions(payload.data.transfers);
+        setDisclosureOptions(disclosuresPayload.data);
         const firstTransferId = payload.data.transfers[0]?.id;
         setTransferRecordId(firstTransferId ? String(firstTransferId) : "");
-        setTransferIdOnchainOverride("");
-        setToAddressOverride("");
+        const firstTransfer = payload.data.transfers[0];
+        const initialDisclosure =
+          disclosuresPayload.data.find(
+            (item) =>
+              item.data_id &&
+              item.asset_id === firstTransfer?.asset_id &&
+              (!item.grantee ||
+                item.grantee.toLowerCase() === firstTransfer?.from_investor_wallet_address?.toLowerCase()),
+          ) ?? null;
+        setDisclosureDataId(initialDisclosure?.data_id || "");
         setEncryptedAmount("");
-        setInputProof("0x");
+        setInputProof("");
+        setProofForKey(null);
       } catch (loadError) {
         if (!active) {
           return;
@@ -239,6 +346,12 @@ export default function NewPassportPage() {
   async function generateProof() {
     setError(null);
 
+    if (!proofInputKey) {
+      setEncryptedAmount("");
+      setInputProof("");
+      setProofForKey(null);
+      return;
+    }
     if (!selectedTransferAmountBigInt || selectedTransferAmountBigInt <= BigInt(0)) {
       setError("Selected transfer amount must be a positive integer to generate NOX proof.");
       return;
@@ -251,13 +364,17 @@ export default function NewPassportPage() {
       setError(`Wallet is on the wrong network. Switch to Arbitrum Sepolia (chain ID ${TARGET_CHAIN_ID}) first.`);
       return;
     }
+    if (!runtimeContracts) {
+      setError("Tenant runtime bundle is not available for proof generation.");
+      return;
+    }
 
     setProofGenerating(true);
     try {
       const generated = await generateEncryptedAmountAndProof(
         {
           amount: selectedTransferAmountBigInt,
-          contractAddress: contractAddresses.transferController,
+          contractAddress: runtimeContracts.transferController as Address,
           chainId: TARGET_CHAIN_ID,
         },
         proofAdapter,
@@ -269,13 +386,29 @@ export default function NewPassportPage() {
 
       setEncryptedAmount(generated.encryptedAmount);
       setInputProof(generated.inputProof);
-      setSuccess(`Encrypted amount dan input proof dibuat lewat ${generated.adapter}.`);
+      setProofForKey(proofInputKey);
+      setSuccess(`Encrypted amount and input proof generated via ${generated.adapter}.`);
     } catch (proofError) {
+      setProofForKey(null);
+      setEncryptedAmount("");
+      setInputProof("");
       setError(decodeWeb3FlowError(proofError, "Failed to generate NOX proof."));
     } finally {
       setProofGenerating(false);
     }
   }
+
+  useEffect(() => {
+    if (!proofInputKey) return;
+    if (proofForKey === proofInputKey) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      void generateProof();
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proofInputKey, proofForKey]);
 
   async function submit() {
     setError(null);
@@ -286,15 +419,15 @@ export default function NewPassportPage() {
       setError("Transfer record ID must be a positive integer.");
       return;
     }
-    if (!transferIdOnchainValid) {
-      setError("Transfer ID on-chain must be a bytes32 hex value.");
+    if (!selectedTransferTxHashValid || !transferIdOnchainValid) {
+      setError("Selected transfer does not have a valid tx hash to derive `transfer_id_onchain`.");
       return;
     }
     if (!hasWallet || !address) {
       setError("Connect wallet before issuing passport.");
       return;
     }
-    if (!policyHashValid || !disclosureDataIdValid || !anchorHashValid) {
+    if (!policyHashValid || !isBytes32Hex(effectiveDisclosureDataId) || !anchorHashValid) {
       setError("Policy hash, disclosure data ID, and anchor hash must be bytes32 values.");
       return;
     }
@@ -310,8 +443,16 @@ export default function NewPassportPage() {
       setError("Recipient address must be a valid wallet address.");
       return;
     }
-    if (!encryptedAmountValid || !inputProofValid) {
-      setError("Encrypted amount must be bytes32 and input proof must be valid hex bytes.");
+    if (!proofReadyForInput || !proofInputKey || proofForKey !== proofInputKey) {
+      setError("NOX proof is missing or stale for the current transfer amount.");
+      return;
+    }
+    if (!runtimePrecheck.ok) {
+      setError(`${runtimePrecheck.summary} ${runtimePrecheck.action}`);
+      return;
+    }
+    if (!runtimeContracts) {
+      setError("Tenant runtime bundle is not available. Complete onboarding and save tenant contracts first.");
       return;
     }
 
@@ -326,22 +467,29 @@ export default function NewPassportPage() {
         to_address: toAddressTrimmed as `0x${string}`,
         encrypted_amount: encryptedAmountTrimmed as `0x${string}`,
         input_proof: inputProofTrimmed as `0x${string}`,
-        disclosure_data_id: disclosureDataId.trim() as `0x${string}`,
-        policy_hash: policyHash.trim() as `0x${string}`,
-        anchor_hash: anchorHash.trim() as `0x${string}`,
+        disclosure_data_id: effectiveDisclosureDataId as `0x${string}`,
+        policy_hash: policyHash as `0x${string}`,
+        anchor_hash: anchorHash as `0x${string}`,
         transfer_id_onchain: transferIdOnchain as `0x${string}`,
       });
 
       const anchorResultHash = await writeContractAsync({
-        address: contractAddresses.auditAnchor,
+        address: runtimeContracts.auditAnchor as Address,
         abi: getContractAbi("auditAnchor"),
         functionName: "commitAnchor",
         args: [prechecked.anchor_hash, reason.trim()],
         chainId: TARGET_CHAIN_ID,
       });
+      const anchorReceipt = await web3PublicClient.waitForTransactionReceipt({
+        hash: anchorResultHash,
+        confirmations: 1,
+      });
+      if (anchorReceipt.status !== "success") {
+        throw new Error(`Passport anchor reverted on-chain. Tx hash: ${anchorResultHash}`);
+      }
 
       const transferResultHash = await writeContractAsync({
-        address: contractAddresses.transferController,
+        address: runtimeContracts.transferController as Address,
         abi: getContractAbi("transferController"),
         functionName: "confidentialTransferFromWithPassport",
         args: [
@@ -357,6 +505,13 @@ export default function NewPassportPage() {
         chainId: TARGET_CHAIN_ID,
         gas: BigInt(1200000),
       });
+      const transferReceipt = await web3PublicClient.waitForTransactionReceipt({
+        hash: transferResultHash,
+        confirmations: 1,
+      });
+      if (transferReceipt.status !== "success") {
+        throw new Error(`Passport transfer reverted on-chain. Tx hash: ${transferResultHash}`);
+      }
 
       const response = await fetch("/api/compliance/passports", {
         method: "POST",
@@ -364,13 +519,24 @@ export default function NewPassportPage() {
         body: JSON.stringify({
           transfer_record_id: transferRecordIdNumber,
           transfer_id_onchain: prechecked.transfer_id_onchain,
-          disclosure_scope: scope.split(",").map((value) => value.trim()).filter(Boolean),
+          disclosure_scope: scopeNormalized.split(",").filter(Boolean),
           policy_hash: prechecked.policy_hash,
           disclosure_data_id: prechecked.disclosure_data_id,
           anchor_hash: prechecked.anchor_hash,
           transfer_tx_hash: transferResultHash,
           anchor_tx_hash: anchorResultHash,
           reason: reason.trim(),
+          onchain_metadata: {
+            chain_id: TARGET_CHAIN_ID,
+            transfer_id_onchain: prechecked.transfer_id_onchain,
+            transfer_tx_hash: transferResultHash,
+            anchor_tx_hash: anchorResultHash,
+            policy_hash: prechecked.policy_hash,
+            disclosure_data_id: prechecked.disclosure_data_id,
+            anchor_hash: prechecked.anchor_hash,
+            transfer_controller_address: runtimeContracts.transferController,
+            audit_anchor_address: runtimeContracts.auditAnchor,
+          },
         }),
       });
       const payload = (await response.json()) as Envelope;
@@ -380,7 +546,7 @@ export default function NewPassportPage() {
         );
       }
 
-      setSuccess("Compliance passport issued and backend record updated.");
+      setSuccess("Compliance passport mined and backend record updated.");
       setResult({
         transferRecordId: transferRecordIdNumber,
         transferIdOnchain: prechecked.transfer_id_onchain,
@@ -409,15 +575,22 @@ export default function NewPassportPage() {
       <PageHeader
         eyebrow="Compliance Passport"
         title="Issue passport"
-        description="Backend transfer record ID and on-chain transfer ID are handled as separate inputs so the payload and UI stay unambiguous."
+        description="Backend transfer record ID and contract transfer ID are handled separately, while every on-chain call is sent to the tenant-owned runtime contracts."
         meta={<StatusBadge tone={formReady && hasWallet && onTargetChain ? "success" : "warning"}>{formReady && hasWallet && onTargetChain ? "Ready to issue" : "Needs input"}</StatusBadge>}
       />
 
       <InlineNotice
         title="Transfer ID distinction"
-        description="`transfer_record_id` is the backend database record used for passport storage. `transfer_id_onchain` is the bytes32 value passed into the smart contract call and may differ in future environments."
+        description="`transfer_record_id` is the backend database record. `transfer_id_onchain` is a deterministic bytes32 domain hash derived from the backend record ID and confirmed transfer tx hash before it is passed into the smart contract."
         tone="neutral"
       />
+      {!runtimePrecheck.ok ? (
+        <InlineNotice
+          title="Tenant runtime required"
+          description={`${runtimePrecheck.summary} ${runtimePrecheck.detail}`}
+          tone="danger"
+        />
+      ) : null}
 
       <SectionCard title="Passport form" description="Select an existing transfer record to reuse investor wallet mapping and recorded transfer context.">
         <div className="grid gap-4">
@@ -428,10 +601,9 @@ export default function NewPassportPage() {
               value={transferRecordId}
               onChange={(event) => {
                 setTransferRecordId(event.target.value);
-                setTransferIdOnchainOverride("");
-                setToAddressOverride("");
                 setEncryptedAmount("");
-                setInputProof("0x");
+                setInputProof("");
+                setProofForKey(null);
               }}
               disabled={loadingOptions || !transferOptions.length}
               className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 text-sm text-foreground outline-none"
@@ -447,12 +619,12 @@ export default function NewPassportPage() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="transfer-id-onchain" className="text-sm font-medium text-foreground">Transfer ID on-chain</label>
+            <label htmlFor="transfer-id-onchain" className="text-sm font-medium text-foreground">Contract transfer ID (bytes32)</label>
             <input
               id="transfer-id-onchain"
               value={transferIdOnchain}
-              onChange={(event) => setTransferIdOnchainOverride(event.target.value)}
-              placeholder="Bytes32 transfer ID used by contract"
+              readOnly
+              placeholder="Derived after selected transfer has tx hash"
               className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none"
             />
           </div>
@@ -469,43 +641,62 @@ export default function NewPassportPage() {
             </p>
           </div>
 
-          <input value={policyHash} onChange={(event) => setPolicyHash(event.target.value)} placeholder="Policy hash (bytes32)" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
-          <input value={disclosureDataId} onChange={(event) => setDisclosureDataId(event.target.value)} placeholder="Disclosure data ID (bytes32)" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
-          <input value={anchorHash} onChange={(event) => setAnchorHash(event.target.value)} placeholder="Anchor hash (bytes32)" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
           <div className="space-y-2">
-            <input value={toAddress} onChange={(event) => setToAddressOverride(event.target.value)} placeholder="Recipient wallet (0x...)" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
+            <label htmlFor="disclosure-data-id" className="text-sm font-medium text-foreground">Disclosure</label>
+            <select
+              id="disclosure-data-id"
+              value={effectiveDisclosureDataId}
+              onChange={(event) => setDisclosureDataId(event.target.value)}
+              disabled={loadingOptions || !activeDisclosureOptions.length}
+              className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 text-sm text-foreground outline-none"
+            >
+              <option value="">Select active disclosure</option>
+              {activeDisclosureOptions.map((option) => (
+                <option key={option.id} value={option.data_id ?? ""}>
+                  {`#${option.id} - ${option.title}${option.grantee ? ` -> ${option.grantee}` : ""}`}
+                </option>
+              ))}
+            </select>
+          </div>
+          <input value={policyHash} readOnly placeholder="Policy hash (auto-derived)" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
+          <input value={anchorHash} readOnly placeholder="Anchor hash (auto-derived)" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
+          <div className="space-y-2">
+            <input value={toAddress} readOnly placeholder="Recipient wallet (0x...)" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
             <p className="text-xs leading-5 text-muted">
               {selectedTransfer?.to_investor_wallet_address
                 ? `Auto-filled from recipient investor #${selectedTransfer.to_investor_id} wallet mapping.`
-                : "Manual wallet input required because the selected transfer recipient has no wallet mapping."}
+                : "Selected transfer recipient must have a wallet mapping before passport issuance."}
             </p>
           </div>
           <div className="space-y-2">
-            <input value={encryptedAmount} onChange={(event) => setEncryptedAmount(event.target.value)} placeholder="Encrypted amount (bytes32)" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
+            <input value={encryptedAmount} readOnly placeholder={proofGenerating ? "Generating NOX proof..." : "Encrypted amount (auto-generated)"} className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
             <div className="flex flex-wrap gap-3">
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => void generateProof()}
-                disabled={!hasWallet || !onTargetChain || !selectedTransferAmountBigInt || proofGenerating}
+                disabled={!hasWallet || !onTargetChain || !selectedTransferAmountBigInt || proofGenerating || !runtimePrecheck.ok}
               >
-                {proofGenerating ? "Generating NOX proof..." : "Generate NOX proof"}
+                {proofGenerating ? "Generating NOX proof..." : "Regenerate NOX proof"}
               </Button>
               <p className="text-xs leading-5 text-muted">
-                Uses selected transfer amount `{selectedTransferAmount || "-"}` against `TransferController`.
+                Uses the selected transfer amount locally to generate the encrypted payload for `TransferController`.
               </p>
             </div>
           </div>
-          <textarea value={inputProof} onChange={(event) => setInputProof(event.target.value)} placeholder="Input proof (0x...)" rows={3} className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
+          <textarea value={inputProof} readOnly placeholder={proofGenerating ? "Generating NOX proof..." : "Input proof (auto-generated)"} rows={3} className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none" />
           <input value={scope} onChange={(event) => setScope(event.target.value)} placeholder="Disclosure scope (comma-separated)" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 text-sm text-foreground outline-none" />
           <input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Reason" className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 text-sm text-foreground outline-none" />
           <div className="flex gap-3">
-            <Button onClick={() => void submit()} disabled={busy || loadingOptions}>{busy ? "Issuing..." : "Issue passport"}</Button>
+            <Button onClick={() => void submit()} disabled={busy || loadingOptions || !runtimePrecheck.ok}>{busy ? "Issuing..." : "Issue passport"}</Button>
             <Button variant="secondary" href="/compliance/passports">Cancel</Button>
           </div>
           {!hasWallet ? <p className="text-sm text-danger">Wallet not connected.</p> : null}
           {hasWallet && !onTargetChain ? <p className="text-sm text-danger">Wrong network. Use Arbitrum Sepolia.</p> : null}
           {!selectedTransferAmountBigInt && selectedTransfer ? <p className="text-sm text-danger">Selected transfer amount must be an integer to generate NOX proof.</p> : null}
+          {!proofReadyForInput && selectedTransferAmountBigInt ? (
+            <p className="text-sm text-danger">Browser-generated NOX proof is not ready for the current transfer amount.</p>
+          ) : null}
         </div>
       </SectionCard>
 
@@ -516,7 +707,7 @@ export default function NewPassportPage() {
           <DetailList
             items={[
               { label: "Transfer record ID", value: `#${result.transferRecordId}` },
-              { label: "Transfer ID on-chain", value: <span className="font-mono text-xs">{result.transferIdOnchain}</span> },
+              { label: "Contract transfer ID", value: <span className="font-mono text-xs">{result.transferIdOnchain}</span> },
               { label: "Transfer tx hash", value: <span className="font-mono text-xs">{result.transferTxHash}</span> },
               { label: "Anchor tx hash", value: <span className="font-mono text-xs">{result.anchorTxHash}</span> },
               { label: "Sender wallet", value: <span className="font-mono text-xs">{result.senderWallet}</span> },
@@ -556,12 +747,6 @@ export default function NewPassportPage() {
             </div>
           ))}
         </div>
-      </SectionCard>
-
-      <SectionCard title="Integration seam" description="This flow already routes pre-check and error decoding through a local adapter seam so shared `frontend/lib/web3` helpers can be wired in later without duplicating the page logic.">
-        <p className="text-sm leading-6 text-muted">
-          When the shared helper arrives, replace the local adapter constant instead of rewriting the form submit path.
-        </p>
       </SectionCard>
     </div>
   );

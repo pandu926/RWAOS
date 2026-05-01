@@ -6,15 +6,16 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useAccount, useDisconnect, useSignMessage, useSwitchChain } from "wagmi";
 
 import { Button } from "@/components/ui";
+import { mapWalletAuthError, sanitizeNextPath } from "@/lib/web3/auth";
 import {
+  TARGET_CHAIN_ID,
   type WalletSession,
   clearWalletSessionCookie,
+  getWalletSessionToken,
   getWalletSessionFromDocumentCookie,
-  isAllowedWallet,
   writeWalletSessionCookie,
 } from "@/lib/web3/session";
 
-const TARGET_CHAIN_ID = 421614;
 const TARGET_CHAIN_HEX = "0x66eee";
 
 type Eip1193Provider = {
@@ -41,14 +42,16 @@ function getProvider(): Eip1193Provider | null {
 }
 
 function getReadableError(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
+  if (error instanceof Error) {
+    return mapWalletAuthError(error);
   }
   if (typeof error === "object" && error !== null) {
     const maybe = error as { shortMessage?: string; details?: string; message?: string };
-    return maybe.shortMessage || maybe.details || maybe.message || "Failed to connect wallet.";
+    return mapWalletAuthError(
+      new Error(maybe.shortMessage || maybe.details || maybe.message || "Failed to connect wallet."),
+    );
   }
-  return "Failed to connect wallet.";
+  return "Proses connect wallet gagal.";
 }
 
 export function WalletConnectButton({
@@ -60,7 +63,7 @@ export function WalletConnectButton({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { address, isConnected, chainId } = useAccount();
+  const { address, isConnected, chainId, status } = useAccount();
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
   const { switchChainAsync } = useSwitchChain();
@@ -69,15 +72,12 @@ export function WalletConnectButton({
   const [session, setSession] = useState<WalletSession | null>(() => getWalletSessionFromDocumentCookie());
   const autoAuthAddressRef = useRef<string | null>(null);
 
-  const nextPath = searchParams.get("next") || "/dashboard";
+  const nextPath = sanitizeNextPath(searchParams.get("next"));
   const isSessionActiveForConnectedAddress =
     !!session?.address && !!address && session.address.toLowerCase() === address.toLowerCase();
+  const sessionToken = getWalletSessionToken(session);
 
   async function authenticateWallet(authAddress: string): Promise<void> {
-    if (!isAllowedWallet(authAddress)) {
-      throw new Error("Wallet is not in the organization allowlist.");
-    }
-
     if (chainId !== TARGET_CHAIN_ID) {
       try {
         await switchChainAsync({ chainId: TARGET_CHAIN_ID });
@@ -113,7 +113,7 @@ export function WalletConnectButton({
     });
     const challengePayload = (await challengeResponse.json()) as ChallengeEnvelope;
     if (!challengeResponse.ok || !challengePayload.success || !challengePayload.data?.message) {
-      throw new Error(challengePayload.error || "Failed to request wallet challenge.");
+      throw new Error(challengePayload.error || "Gagal meminta challenge login wallet.");
     }
 
     const signature = await signMessageAsync({ message: challengePayload.data.message });
@@ -133,7 +133,7 @@ export function WalletConnectButton({
 
     const loginPayload = (await loginResponse.json()) as WalletLoginEnvelope;
     if (!loginResponse.ok || !loginPayload.success || !loginPayload.data?.token) {
-      throw new Error(loginPayload.error || "Wallet login failed.");
+      throw new Error(loginPayload.error || "Login wallet gagal.");
     }
 
     const nextSession: WalletSession = {
@@ -196,6 +196,71 @@ export function WalletConnectButton({
     autoAuthAddressRef.current = address.toLowerCase();
     triggerAutoAuth();
   }, [address, busy, isConnected, isSessionActiveForConnectedAddress]);
+
+  useEffect(() => {
+    if (status !== "disconnected" || !session) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      clearWalletSessionCookie();
+      setSession(null);
+      autoAuthAddressRef.current = null;
+      if (mode !== "login") {
+        router.push("/login");
+        router.refresh();
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [mode, router, session, status]);
+
+  useEffect(() => {
+    if (!sessionToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const verifySession = async () => {
+      try {
+        const response = await fetch("/api/auth/wallet/me", {
+          method: "GET",
+          cache: "no-store",
+        });
+        if (cancelled || response.ok) {
+          return;
+        }
+        clearWalletSessionCookie();
+        setSession(null);
+        autoAuthAddressRef.current = null;
+        if (mode === "login") {
+          setError("Session wallet sudah kedaluwarsa. Silakan connect ulang.");
+        } else {
+          router.push("/login");
+          router.refresh();
+        }
+      } catch {
+        if (cancelled) {
+          return;
+        }
+        clearWalletSessionCookie();
+        setSession(null);
+        autoAuthAddressRef.current = null;
+        if (mode === "login") {
+          setError("Session wallet tidak bisa diverifikasi. Silakan connect ulang.");
+        } else {
+          router.push("/login");
+          router.refresh();
+        }
+      }
+    };
+
+    void verifySession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, router, sessionToken]);
 
   if (mode === "header") {
     return (

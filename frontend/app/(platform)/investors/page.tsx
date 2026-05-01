@@ -1,77 +1,79 @@
-import { investorTone } from "@/lib/site-data";
 import { getInvestors } from "@/lib/api";
-import { Button, FilterChip, PageHeader, SearchField, SectionCard, StatusBadge, SurfaceTable } from "@/components/ui";
-import { formatCurrency } from "@/lib/utils";
+import { Button, PageHeader, SectionCard, StatusBadge, SurfaceTable } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function InvestorsPage() {
   const investors = await getInvestors();
-  const verified = investors.filter((investor) => investor.whitelistStatus === "Verified").length;
-  const pending = investors.filter((investor) => investor.whitelistStatus === "Pending review").length;
-  const restricted = investors.filter((investor) => investor.whitelistStatus === "Restricted").length;
-  const visibleAllocation = investors.reduce((sum, investor) => sum + investor.allocation, 0);
+  const mappedWallets = investors.filter((investor) => investor.walletMapped).length;
+  const missingWallets = investors.length - mappedWallets;
+  const initialHolders = investors.filter((investor) => investor.initialHolderAssetsCount > 0).length;
+  const usedInTransfers = investors.filter(
+    (investor) => investor.sentTransfers > 0 || investor.receivedTransfers > 0,
+  ).length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Investor directory"
         title="Investors"
-        description="Directory of holders and counterparties within the organization’s operational scope, including whitelist status and activity history."
+        description="Investor records map a legal entity to a wallet address. Transfer, disclosure, and passport flows reuse this mapping so users do not need to type raw addresses on every operation."
         meta={<StatusBadge tone="accent">{investors.length} tracked</StatusBadge>}
         actions={
           <>
             <Button variant="secondary" href="/api/exports/investor-template">Import addresses</Button>
-            <Button href="/investors/new">Invite investor</Button>
+            <Button href="/investors/new">Add investor</Button>
           </>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SectionCard title="Verified">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{verified}</p>
+        <SectionCard title="Wallet mapped">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{mappedWallets}</p>
           <p className="mt-2 text-sm text-muted">Ready for transfer activity</p>
         </SectionCard>
-        <SectionCard title="Pending review">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{pending}</p>
-          <p className="mt-2 text-sm text-muted">Need credential refresh or approval</p>
+        <SectionCard title="Missing wallet">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{missingWallets}</p>
+          <p className="mt-2 text-sm text-muted">Cannot be used as sender/recipient until mapped</p>
         </SectionCard>
-        <SectionCard title="Restricted">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{restricted}</p>
-          <p className="mt-2 text-sm text-muted">Visibility reduced by policy</p>
+        <SectionCard title="Initial holders">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{initialHolders}</p>
+          <p className="mt-2 text-sm text-muted">Wallets that received initial confidential issuance</p>
         </SectionCard>
-        <SectionCard title="Visible allocation">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">
-            {formatCurrency(visibleAllocation)}
-          </p>
-          <p className="mt-2 text-sm text-muted">Role-scoped, not public</p>
+        <SectionCard title="Used in transfers">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{usedInTransfers}</p>
+          <p className="mt-2 text-sm text-muted">Already referenced by at least one transfer record</p>
         </SectionCard>
       </div>
 
-      <SectionCard>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 flex-col gap-4 md:flex-row">
-            <SearchField placeholder="Search investors..." />
-            <div className="flex flex-wrap gap-3">
-              <FilterChip>Whitelist status</FilterChip>
-              <FilterChip>Role</FilterChip>
-              <FilterChip>Asset exposure</FilterChip>
-            </div>
+      <SectionCard title="How this page is used" description="Keep the registry aligned with actual on-chain holder wallets.">
+        <div className="grid gap-3 text-sm text-muted md:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-surface-soft p-4">
+            <p className="font-semibold text-foreground">Asset issuance</p>
+            <p className="mt-2">If an asset is minted to a wallet, create or update the investor record with that same wallet. The first transfer must originate from that mapped holder.</p>
+          </div>
+          <div className="rounded-2xl border border-border bg-surface-soft p-4">
+            <p className="font-semibold text-foreground">Disclosure</p>
+            <p className="mt-2">Disclosure grantee selection can prefill wallet addresses from this registry, but the wallet still needs to be correct for the caller or recipient.</p>
+          </div>
+          <div className="rounded-2xl border border-border bg-surface-soft p-4">
+            <p className="font-semibold text-foreground">Transfers and passports</p>
+            <p className="mt-2">Transfer sender/recipient and passport context use investor IDs from this registry, then resolve to wallet mappings for on-chain actions.</p>
           </div>
         </div>
       </SectionCard>
 
       <SurfaceTable>
-        <table className="min-w-[980px] w-full text-left">
+        <table className="min-w-[1100px] w-full text-left">
           <thead className="border-b border-border bg-surface-soft text-xs font-semibold uppercase tracking-[0.24em] text-muted">
             <tr>
-              <th className="px-6 py-4">Entity</th>
-              <th className="px-6 py-4">Address</th>
-              <th className="px-6 py-4">Role</th>
-              <th className="px-6 py-4">Assets</th>
-              <th className="px-6 py-4">Allocation</th>
-              <th className="px-6 py-4">Last activity</th>
-              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">Investor</th>
+              <th className="px-6 py-4">Wallet mapping</th>
+              <th className="px-6 py-4">Jurisdiction</th>
+              <th className="px-6 py-4">Initial holder</th>
+              <th className="px-6 py-4">Transfer usage</th>
+              <th className="px-6 py-4">Disclosure grants</th>
+              <th className="px-6 py-4">Readiness</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -79,19 +81,27 @@ export default async function InvestorsPage() {
               <tr key={investor.id} className="hover:bg-surface-soft/80">
                 <td className="px-6 py-5">
                   <p className="text-sm font-semibold text-foreground">{investor.name}</p>
+                  <p className="mt-1 text-xs text-muted">{investor.lastActivity}</p>
                 </td>
                 <td className="px-6 py-5 font-mono text-xs text-muted">
-                  {investor.address}
+                  {investor.walletMapped ? investor.address : "Wallet not mapped"}
                 </td>
-                <td className="px-6 py-5 text-sm text-foreground">{investor.role}</td>
-                <td className="px-6 py-5 text-sm text-foreground">{investor.assetsCount}</td>
-                <td className="px-6 py-5 text-sm font-semibold text-foreground">
-                  {formatCurrency(investor.allocation)}
+                <td className="px-6 py-5 text-sm text-foreground">{investor.jurisdiction}</td>
+                <td className="px-6 py-5 text-sm text-foreground">
+                  {investor.initialHolderAssetsCount > 0
+                    ? `${investor.initialHolderAssetsCount} asset${investor.initialHolderAssetsCount === 1 ? "" : "s"}`
+                    : "No"}
                 </td>
-                <td className="px-6 py-5 text-sm text-foreground">{investor.lastActivity}</td>
+                <td className="px-6 py-5 text-sm text-foreground">
+                  <span className="font-semibold">{investor.sentTransfers}</span>
+                  {" sent / "}
+                  <span className="font-semibold">{investor.receivedTransfers}</span>
+                  {" received"}
+                </td>
+                <td className="px-6 py-5 text-sm text-foreground">{investor.disclosureGrants}</td>
                 <td className="px-6 py-5">
-                  <StatusBadge tone={investorTone(investor.whitelistStatus)}>
-                    {investor.whitelistStatus}
+                  <StatusBadge tone={investor.walletMapped ? "success" : "warning"}>
+                    {investor.readiness}
                   </StatusBadge>
                 </td>
               </tr>

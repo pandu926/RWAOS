@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 
-import { getWalletSessionFromCookieHeader } from "@/lib/web3/session";
+import { getWalletSessionTokenFromRequest } from "@/lib/web3/session";
 
 type CreateAssetRequest = {
   name: string;
   asset_type: string;
+  metadata_uri?: string;
+  issuance_wallet?: string;
+  initial_supply?: number;
+  anchor_hash?: string;
+  anchor_tx_hash?: string;
+  issuance_tx_hash?: string;
 };
 
 function getBackendBaseUrl(): string {
@@ -33,7 +39,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = getWalletSessionFromCookieHeader(request.headers.get("cookie"))?.token;
+  const metadataUri = typeof payload.metadata_uri === "string" ? payload.metadata_uri.trim() : "";
+  const issuanceWallet = typeof payload.issuance_wallet === "string" ? payload.issuance_wallet.trim() : "";
+  const initialSupply =
+    typeof payload.initial_supply === "number" && Number.isInteger(payload.initial_supply) && payload.initial_supply > 0
+      ? payload.initial_supply
+      : undefined;
+  const anchorHash = typeof payload.anchor_hash === "string" ? payload.anchor_hash.trim() : "";
+  const anchorTxHash = typeof payload.anchor_tx_hash === "string" ? payload.anchor_tx_hash.trim() : "";
+  const issuanceTxHash = typeof payload.issuance_tx_hash === "string" ? payload.issuance_tx_hash.trim() : "";
+
+  const token = getWalletSessionTokenFromRequest(request);
   if (!token) {
     return NextResponse.json(
       { success: false, error: "Missing wallet session token. Please reconnect wallet." },
@@ -51,6 +67,12 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         name: payload.name.trim(),
         asset_type: payload.asset_type.trim(),
+        ...(metadataUri ? { metadata_uri: metadataUri } : {}),
+        ...(issuanceWallet ? { issuance_wallet: issuanceWallet } : {}),
+        ...(initialSupply ? { initial_supply: initialSupply } : {}),
+        ...(anchorHash ? { anchor_hash: anchorHash } : {}),
+        ...(anchorTxHash ? { anchor_tx_hash: anchorTxHash } : {}),
+        ...(issuanceTxHash ? { issuance_tx_hash: issuanceTxHash } : {}),
       }),
       cache: "no-store",
     });

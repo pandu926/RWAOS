@@ -5,16 +5,25 @@ import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+function formatTransferAmount(transfer: { amount: number; amountVisibility: string }) {
+  return transfer.amountVisibility.startsWith("Visible")
+    ? formatCurrency(transfer.amount)
+    : "Encrypted payload";
+}
+
 export default async function TransfersPage() {
   const transfers = await getTransfers();
-  const totalTransfers = transfers.length;
+  const confirmedTransfers = transfers.filter((transfer) => transfer.status === "Confirmed").length;
+  const pendingTransfers = transfers.filter((transfer) => transfer.status === "Pending" || transfer.status === "Submitted").length;
+  const failedTransfers = transfers.filter((transfer) => transfer.status === "Failed" || transfer.status === "Rejected").length;
   const uniqueAssets = new Set(transfers.map((transfer) => transfer.assetId)).size;
   const uniqueParticipants = new Set(
     transfers
       .flatMap((transfer) => [transfer.from, transfer.to])
       .filter((value) => value && value !== "N/A"),
   ).size;
-  const totalVolume = transfers.reduce((sum, transfer) => sum + transfer.amount, 0);
+  const visibleTransfers = transfers.filter((transfer) => transfer.amountVisibility.startsWith("Visible"));
+  const visibleVolume = visibleTransfers.reduce((sum, transfer) => sum + transfer.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -32,22 +41,24 @@ export default async function TransfersPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SectionCard title="Confirmed">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{totalTransfers}</p>
-          <p className="mt-2 text-sm text-muted">Total recorded transfers</p>
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{confirmedTransfers}</p>
+          <p className="mt-2 text-sm text-muted">Receipt status success</p>
         </SectionCard>
         <SectionCard title="Pending">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{uniqueAssets}</p>
-          <p className="mt-2 text-sm text-muted">Unique assets referenced</p>
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{pendingTransfers}</p>
+          <p className="mt-2 text-sm text-muted">Awaiting final on-chain receipt</p>
         </SectionCard>
-        <SectionCard title="Rejected">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{uniqueParticipants}</p>
-          <p className="mt-2 text-sm text-muted">Unique participants (from/to)</p>
+        <SectionCard title="Failed">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">{failedTransfers}</p>
+          <p className="mt-2 text-sm text-muted">Receipt status reverted</p>
         </SectionCard>
-        <SectionCard title="Visible confirmed volume">
+        <SectionCard title="Coverage">
           <p className="text-3xl font-semibold tracking-tight text-foreground">
-            {formatCurrency(totalVolume)}
+            {uniqueAssets}
           </p>
-          <p className="mt-2 text-sm text-muted">Total transferred amount</p>
+          <p className="mt-2 text-sm text-muted">
+            {uniqueParticipants} unique participants, {visibleTransfers.length ? `${formatCurrency(visibleVolume)} visible to this wallet` : "amounts encrypted"}
+          </p>
         </SectionCard>
       </div>
 
@@ -72,7 +83,7 @@ export default async function TransfersPage() {
               <th className="px-6 py-4">Asset</th>
               <th className="px-6 py-4">From</th>
               <th className="px-6 py-4">To</th>
-              <th className="px-6 py-4">Amount</th>
+              <th className="px-6 py-4">Confidential amount</th>
               <th className="px-6 py-4">Visibility</th>
               <th className="px-6 py-4">Status</th>
             </tr>
@@ -83,12 +94,21 @@ export default async function TransfersPage() {
                 <td className="px-6 py-5">
                   <p className="text-sm font-semibold text-foreground">{transfer.id}</p>
                   <p className="mt-1 text-xs text-muted">{transfer.submittedAt}</p>
+                  {transfer.txHash ? (
+                    <p className="mt-1 font-mono text-[11px] text-muted">{transfer.txHash}</p>
+                  ) : null}
+                  {transfer.disclosureDataId ? (
+                    <p className="mt-1 font-mono text-[11px] text-muted">Disclosure: {transfer.disclosureDataId}</p>
+                  ) : null}
+                  {transfer.failureReason ? (
+                    <p className="mt-1 text-[11px] text-danger">{transfer.failureReason}</p>
+                  ) : null}
                 </td>
                 <td className="px-6 py-5 text-sm text-foreground">{transfer.assetName}</td>
                 <td className="px-6 py-5 font-mono text-xs text-muted">{transfer.from}</td>
                 <td className="px-6 py-5 font-mono text-xs text-muted">{transfer.to}</td>
                 <td className="px-6 py-5 text-sm font-semibold text-foreground">
-                  {formatCurrency(transfer.amount)}
+                  {formatTransferAmount(transfer)}
                 </td>
                 <td className="px-6 py-5">
                   <StatusBadge tone={transfer.amountVisibility === "Hidden" ? "warning" : "neutral"}>

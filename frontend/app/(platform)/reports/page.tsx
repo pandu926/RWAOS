@@ -15,16 +15,17 @@ export default async function ReportsPage() {
     getAuditEvents(),
   ]);
 
-  const totalVolume = transfers.reduce((sum, transfer) => sum + transfer.amount, 0);
   const activeAssets = assets.filter((asset) => asset.status === "Active").length;
   const verifiedInvestors = investors.filter((investor) => investor.whitelistStatus === "Verified").length;
   const complianceEvents = disclosures.length + auditEvents.length;
   const latestTransferLabel = transfers.at(-1)?.reference ?? "No transfer hash yet";
+  const visibleTransfers = transfers.filter((transfer) => transfer.amountVisibility.startsWith("Visible"));
+  const visibleVolume = visibleTransfers.reduce((sum, transfer) => sum + transfer.amount, 0);
 
   const recentTransfers = transfers.slice(-6);
   const trendData = recentTransfers.map((item, index) => ({
     label: `T${index + 1}`,
-    value: item.amount > 0 ? item.amount : 1,
+    value: item.txHash ? 1 : 0.5,
   }));
   const safeTrendData =
     trendData.length > 0 ? trendData : [{ label: "No data", value: 1 }];
@@ -55,9 +56,13 @@ export default async function ReportsPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SectionCard title="Total volume">
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{formatCurrency(totalVolume)}</p>
-          <p className="mt-2 text-sm text-muted">From transfer records</p>
+        <SectionCard title="Confidential volume">
+          <p className="text-3xl font-semibold tracking-tight text-foreground">
+            {visibleTransfers.length > 0 ? formatCurrency(visibleVolume) : "Encrypted"}
+          </p>
+          <p className="mt-2 text-sm text-muted">
+            {visibleTransfers.length > 0 ? "Visible to connected authorized wallet" : "Amounts are disclosure-gated, not public report data"}
+          </p>
         </SectionCard>
         <SectionCard title="Active assets">
           <p className="text-3xl font-semibold tracking-tight text-foreground">{activeAssets}</p>
@@ -74,7 +79,7 @@ export default async function ReportsPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
-        <SectionCard title="Recent transfer trend" description="Based on latest transfer amounts currently available.">
+        <SectionCard title="Recent transfer activity" description="Shows recent confidential transfer activity without exposing amounts.">
           <TrendBars data={safeTrendData} />
           <p className="mt-4 text-sm text-muted">Latest transfer reference: {latestTransferLabel}</p>
         </SectionCard>
@@ -96,9 +101,6 @@ export default async function ReportsPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {assets.map((asset) => {
-              const totalByAsset = transfers
-                .filter((transfer) => transfer.assetId === asset.id)
-                .reduce((sum, transfer) => sum + transfer.amount, 0);
               const transferCount = transfers.filter((transfer) => transfer.assetId === asset.id).length;
               return (
                 <tr key={asset.id} className="hover:bg-surface-soft/80">
@@ -108,7 +110,17 @@ export default async function ReportsPage() {
                   </td>
                   <td className="px-6 py-5 text-sm text-foreground">{asset.type}</td>
                   <td className="px-6 py-5 text-sm text-foreground">{transferCount}</td>
-                  <td className="px-6 py-5 text-sm font-semibold text-foreground">{formatCurrency(totalByAsset)}</td>
+                  <td className="px-6 py-5 text-sm font-semibold text-foreground">
+                    {transfers
+                      .filter((transfer) => transfer.assetId === asset.id && transfer.amountVisibility.startsWith("Visible"))
+                      .reduce((sum, transfer) => sum + transfer.amount, 0) > 0
+                      ? formatCurrency(
+                          transfers
+                            .filter((transfer) => transfer.assetId === asset.id && transfer.amountVisibility.startsWith("Visible"))
+                            .reduce((sum, transfer) => sum + transfer.amount, 0),
+                        )
+                      : "Encrypted payloads"}
+                  </td>
                   <td className="px-6 py-5">
                     <StatusBadge tone={assetTone(asset.status)}>{asset.status}</StatusBadge>
                   </td>

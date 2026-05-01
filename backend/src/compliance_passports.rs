@@ -13,6 +13,7 @@ use sqlx::{FromRow, PgPool};
 use crate::{
     ApiEnvelope, AppState,
     identity_access::{AuthUser, Role},
+    institution_id_from_user,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -63,6 +64,7 @@ impl CompliancePassportRepository {
 
     pub async fn create(
         &self,
+        institution_id: i64,
         payload: CreateCompliancePassportRequest,
         created_by: &str,
         created_by_role: &str,
@@ -73,12 +75,15 @@ impl CompliancePassportRepository {
         sqlx::query_as::<_, CompliancePassport>(
             r#"
             INSERT INTO compliance_passports (
-                transfer_id, transfer_record_id, transfer_id_onchain, policy_hash, disclosure_data_id, anchor_hash, status,
+                institution_id, transfer_id, transfer_record_id, transfer_id_onchain, policy_hash, disclosure_data_id, anchor_hash, status,
                 transfer_tx_hash, anchor_tx_hash, disclosure_scope, reason,
                 created_by, created_by_role, created_at_unix
             )
-            VALUES ($1, $2, $3, $4, $5, $6, 'Anchored', $7, $8, $9, $10, $11, $12, $13)
-            ON CONFLICT (transfer_record_id) DO UPDATE
+            SELECT $1, $2, $2, $3, $4, $5, $6, 'Anchored', $7, $8, $9, $10, $11, $12, $13
+            WHERE EXISTS (
+                SELECT 1 FROM transfers WHERE id = $2 AND institution_id = $1
+            )
+            ON CONFLICT (institution_id, transfer_record_id) DO UPDATE
             SET
                 transfer_id = EXCLUDED.transfer_id,
                 transfer_id_onchain = EXCLUDED.transfer_id_onchain,
@@ -98,7 +103,7 @@ impl CompliancePassportRepository {
                 created_by, created_by_role, created_at_unix, last_accessed_unix
             "#,
         )
-        .bind(payload.transfer_record_id)
+        .bind(institution_id)
         .bind(payload.transfer_record_id)
         .bind(payload.transfer_id_onchain)
         .bind(payload.policy_hash)
@@ -115,22 +120,25 @@ impl CompliancePassportRepository {
         .await
     }
 
-    pub async fn list(&self) -> Result<Vec<CompliancePassport>, sqlx::Error> {
+    pub async fn list(&self, institution_id: i64) -> Result<Vec<CompliancePassport>, sqlx::Error> {
         sqlx::query_as::<_, CompliancePassport>(
             r#"
             SELECT id, transfer_record_id, transfer_id_onchain, policy_hash, disclosure_data_id,
                 anchor_hash, status, transfer_tx_hash, anchor_tx_hash, disclosure_scope, reason,
                 created_by, created_by_role, created_at_unix, last_accessed_unix
             FROM compliance_passports
+            WHERE institution_id = $1
             ORDER BY transfer_record_id ASC
             "#,
         )
+        .bind(institution_id)
         .fetch_all(&self.pool)
         .await
     }
 
     pub async fn find_by_transfer_record_id(
         &self,
+        institution_id: i64,
         transfer_record_id: i64,
     ) -> Result<Option<CompliancePassport>, sqlx::Error> {
         sqlx::query_as::<_, CompliancePassport>(
@@ -139,9 +147,10 @@ impl CompliancePassportRepository {
                 anchor_hash, status, transfer_tx_hash, anchor_tx_hash, disclosure_scope, reason,
                 created_by, created_by_role, created_at_unix, last_accessed_unix
             FROM compliance_passports
-            WHERE transfer_record_id = $1
+            WHERE institution_id = $1 AND transfer_record_id = $2
             "#,
         )
+        .bind(institution_id)
         .bind(transfer_record_id)
         .fetch_optional(&self.pool)
         .await
@@ -149,20 +158,22 @@ impl CompliancePassportRepository {
 
     pub async fn mark_accessed(
         &self,
+        institution_id: i64,
         transfer_record_id: i64,
     ) -> Result<Option<CompliancePassport>, sqlx::Error> {
         sqlx::query_as::<_, CompliancePassport>(
             r#"
             UPDATE compliance_passports
             SET last_accessed_unix = $2
-            WHERE transfer_record_id = $1
+            WHERE institution_id = $1 AND transfer_record_id = $3
             RETURNING id, transfer_record_id, transfer_id_onchain, policy_hash, disclosure_data_id,
                 anchor_hash, status, transfer_tx_hash, anchor_tx_hash, disclosure_scope, reason,
                 created_by, created_by_role, created_at_unix, last_accessed_unix
             "#,
         )
-        .bind(transfer_record_id)
+        .bind(institution_id)
         .bind(now_unix())
+        .bind(transfer_record_id)
         .fetch_optional(&self.pool)
         .await
     }
@@ -183,14 +194,23 @@ async fn list(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> (StatusCode, Json<ApiEnvelope<Vec<CompliancePassport>>>) {
-    if authorize_from_headers(&state, &headers, &[Role::Admin, Role::Auditor]).is_none() {
+    let Some(user) = authorize_from_headers(&state, &headers, &[Role::Admin, Role::Auditor]) else {
         return (
             StatusCode::FORBIDDEN,
             Json(ApiEnvelope::err("insufficient role for passport listing")),
         );
-    }
+    };
+    let institution_id = match institution_id_from_user(&user) {
+        Ok(value) => value,
+        Err(_) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(ApiEnvelope::err("missing institution scope")),
+            );
+        }
+    };
 
-    match state.compliance_passport_repo.list().await {
+    match state.compliance_passport_repo.list(institution_id).await {
         Ok(items) => (StatusCode::OK, Json(ApiEnvelope::ok(items))),
         Err(err) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -213,6 +233,15 @@ async fn create(
             Json(ApiEnvelope::err("insufficient role for passport issuance")),
         );
     };
+    let institution_id = match institution_id_from_user(&user) {
+        Ok(value) => value,
+        Err(_) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(ApiEnvelope::err("missing institution scope")),
+            );
+        }
+    };
 
     let payload = match payload {
         Ok(Json(value)) => match parse_create_compliance_passport_request(&value) {
@@ -231,10 +260,39 @@ async fn create(
 
     match state
         .compliance_passport_repo
-        .create(payload, &user.username, role_as_str(user.role))
+        .create(
+            institution_id,
+            payload,
+            &user.username,
+            role_as_str(user.role),
+        )
         .await
     {
-        Ok(created) => (StatusCode::OK, Json(ApiEnvelope::ok(created))),
+        Ok(created) => {
+            let action = format!(
+                "passport_issued:id={}:transfer_record_id={}:transfer_id_onchain={}:data_id={}:policy_hash={}:anchor_hash={}:anchor_tx={}:transfer_tx={}",
+                created.id,
+                created.transfer_record_id,
+                created.transfer_id_onchain.as_deref().unwrap_or("none"),
+                created.disclosure_data_id,
+                created.policy_hash,
+                created.anchor_hash,
+                created.anchor_tx_hash,
+                created.transfer_tx_hash,
+            );
+            let event = crate::audit_reporting::AuditEvent::from_request(
+                crate::audit_reporting::CreateAuditEventRequest::new(&user.username, &action),
+            );
+            let _ = state.audit_repo.push_event(institution_id, event).await;
+
+            (StatusCode::OK, Json(ApiEnvelope::ok(created)))
+        }
+        Err(sqlx::Error::RowNotFound) => (
+            StatusCode::FORBIDDEN,
+            Json(ApiEnvelope::err(
+                "transfer record is outside your institution scope",
+            )),
+        ),
         Err(err) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ApiEnvelope::err(format!(
@@ -249,16 +307,25 @@ async fn get_by_transfer_id(
     headers: HeaderMap,
     Path(transfer_record_id): Path<i64>,
 ) -> (StatusCode, Json<ApiEnvelope<CompliancePassport>>) {
-    if authorize_from_headers(&state, &headers, &[Role::Admin, Role::Auditor]).is_none() {
+    let Some(user) = authorize_from_headers(&state, &headers, &[Role::Admin, Role::Auditor]) else {
         return (
             StatusCode::FORBIDDEN,
             Json(ApiEnvelope::err("insufficient role for passport detail")),
         );
-    }
+    };
+    let institution_id = match institution_id_from_user(&user) {
+        Ok(value) => value,
+        Err(_) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(ApiEnvelope::err("missing institution scope")),
+            );
+        }
+    };
 
     match state
         .compliance_passport_repo
-        .find_by_transfer_record_id(transfer_record_id)
+        .find_by_transfer_record_id(institution_id, transfer_record_id)
         .await
     {
         Ok(Some(item)) => (StatusCode::OK, Json(ApiEnvelope::ok(item))),
@@ -288,6 +355,16 @@ async fn access(
         );
     };
 
+    let institution_id = match institution_id_from_user(&user) {
+        Ok(value) => value,
+        Err(_) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(ApiEnvelope::err("missing institution scope")),
+            );
+        }
+    };
+
     let action = format!(
         "compliance_passport_accessed:transfer_record_id={transfer_record_id}:reason={}",
         payload.reason_code
@@ -295,11 +372,11 @@ async fn access(
     let event = crate::audit_reporting::AuditEvent::from_request(
         crate::audit_reporting::CreateAuditEventRequest::new(&user.username, &action),
     );
-    let _ = state.audit_repo.push_event(event).await;
+    let _ = state.audit_repo.push_event(institution_id, event).await;
 
     match state
         .compliance_passport_repo
-        .mark_accessed(transfer_record_id)
+        .mark_accessed(institution_id, transfer_record_id)
         .await
     {
         Ok(Some(item)) => (StatusCode::OK, Json(ApiEnvelope::ok(item))),
@@ -325,7 +402,7 @@ fn authorize_from_headers(
         .get(header::AUTHORIZATION)
         .and_then(|value| value.to_str().ok())
         .and_then(|value| value.strip_prefix("Bearer "))?;
-    let user = state.auth_tokens.get(token)?;
+    let user = crate::identity_access::resolve_session_user_from_token(state, token)?;
     if allowed.iter().any(|role| role == &user.role) {
         Some(user.clone())
     } else {

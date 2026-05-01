@@ -36,18 +36,22 @@ All responses use a JSON envelope:
 }
 ```
 
-## RBAC
+## Auth Stage 1 (Current)
 
-Bearer token auth with roles:
+Stage 1 uses in-memory role tokens (no JWT yet).
 
-- `admin-token` → `admin`
-- `operator-token` → `operator`
-- `auditor-token` → `auditor`
+Built-in users for `POST /auth/login`:
 
-Guards:
+- `admin_user` → `admin-token` (`admin`)
+- `operator_user` → `operator-token` (`operator`)
+- `auditor_user` → `auditor-token` (`auditor`)
 
-- Admin/Operator: `/assets`, `/investors`, `/transfers`, `/disclosures`
-- Admin/Auditor: `/audit/events`
+`GET /auth/me` and protected endpoints read `Authorization: Bearer <token>`.
+
+Role guards in backend:
+
+- Admin/Operator: `/assets`, `/investors`, `/transfers`, `/disclosures`, `POST /compliance/passports`
+- Admin/Auditor: `/audit/events`, `GET /compliance/passports`, `GET /compliance/passports/{transfer_id}`, `POST /compliance/passports/{transfer_id}/access`
 
 ## Environment
 
@@ -57,10 +61,20 @@ Guards:
 - `AUTH_OPERATOR_WALLETS` (comma-separated EVM addresses)
 - `AUTH_AUDITOR_WALLETS` (comma-separated EVM addresses)
 
+Auth notes for stage 1:
+
+- Wallet allowlist envs above are read at startup to map wallet → role.
+- Wallet matching is normalized to lowercase.
+- If one wallet appears in multiple allowlist env vars, the later assignment wins:
+  - `AUTH_ADMIN_WALLETS` → then `AUTH_OPERATOR_WALLETS` → then `AUTH_AUDITOR_WALLETS`.
+- There is currently no `AUTH_TOKEN_SECRET` or token TTL env in backend runtime. Tokens are fixed role tokens returned by login endpoints.
+
 Wallet auth flow:
 1. `POST /auth/wallet/challenge` with `{ address, chain_id }`
-2. Sign returned message with `personal_sign`
-3. `POST /auth/wallet/login` with `{ address, chain_id, signature }`
+2. Backend checks allowlist and issues one-time nonce challenge message.
+3. Sign returned message with `personal_sign`.
+4. `POST /auth/wallet/login` with `{ address, chain_id, signature }`.
+5. Backend verifies signature recovery equals requested wallet, consumes nonce, then returns role token (`admin-token` / `operator-token` / `auditor-token`).
 
 `chain_id` currently enforced to Arbitrum Sepolia (`421614`).
 

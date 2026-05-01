@@ -55,13 +55,45 @@ test.describe("E2E proof flows", () => {
     await submitButton.click();
     await page.waitForURL("**/transfers");
 
-    expect(transferPayload).toEqual({
+    expect(transferPayload).toMatchObject({
       asset_id: 1,
       from_investor_id: 1,
       to_investor_id: 2,
       amount: 1250,
       tx_hash: `0x${"0".repeat(63)}1`,
+      sender_wallet_address: "0x1111111111111111111111111111111111111111",
+      recipient_wallet_address: "0x2222222222222222222222222222222222222222",
+      disclosure_data_id: `0x${"2".repeat(64)}`,
     });
+  });
+
+  test("transfer new keeps user on form when API reports reverted transfer status", async ({ page }) => {
+    await page.route("**/api/transfers", async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: false,
+          error: "Transfer transaction reverted on-chain. Backend record was not marked as confirmed.",
+          data: {
+            tx_status: "reverted",
+            tx_hash: `0x${"0".repeat(63)}1`,
+          },
+        }),
+      });
+    });
+
+    await page.goto("/transfers/new", { waitUntil: "domcontentloaded" });
+    await connectSessionWallet(page);
+    await fillValidTransferForm(page);
+
+    const submitButton = page.getByRole("button", { name: "Initiate confidential transfer" });
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
+
+    await expect(page).toHaveURL(/\/transfers\/new/);
+    await expect(page.getByText(/Transfer transaction reverted on-chain/i)).toBeVisible();
+    await expect(page.getByText("Transfer failed")).toBeVisible();
   });
 
   test("disclosures new blocks invalid submit, surfaces API errors, and posts expected payload", async ({ page }) => {

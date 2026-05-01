@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { isAddress, isHex, type Address } from "viem";
+import { encodeAbiParameters, isAddress, isHex, keccak256, type Address } from "viem";
 import { useAccount, useChainId, useSwitchChain, useWalletClient, useWriteContract } from "wagmi";
 
 import {
@@ -15,10 +15,17 @@ import {
 } from "@/app/_lib/onchain-flow";
 import { Button, DetailList, InlineNotice, PageHeader, SectionCard, StatusBadge } from "@/components/ui";
 import { organization } from "@/lib/site-data";
-import { contractAddresses, getContractAbi } from "@/lib/web3/contracts";
+import { web3PublicClient } from "@/lib/web3/client";
+import { getContractAbi } from "@/lib/web3/contracts";
 import { decodeTransferControllerError } from "@/lib/web3/errors";
-import { getTransferPrecheckStatus, getTransferReadinessItems, type TransferPrecheckStatus } from "@/lib/web3/prechecks";
+import {
+  getTenantRuntimePrecheckStatus,
+  getTransferPrecheckStatus,
+  getTransferReadinessItems,
+  type TransferPrecheckStatus,
+} from "@/lib/web3/prechecks";
 import { createViemWalletClientProofAdapter, generateEncryptedAmountAndProof, getProofReadinessItems } from "@/lib/web3/proof";
+import { fetchTenantBundleRuntime, type TenantBundleRuntime } from "@/lib/web3/tenant-contract-runtime";
 
 type TransferEnvelope = {
   success: boolean;
@@ -42,7 +49,7 @@ type InvestorOption = {
 type TransferFormOptionsEnvelope = {
   success: boolean;
   data?: {
-    assets: Array<{ id: number; name: string }>;
+    assets: Array<{ id: number; name: string; issuance_wallet: string | null }>;
     investors: InvestorOption[];
     transfers: Array<{
       id: number;
@@ -56,6 +63,7 @@ type TransferFormOptionsEnvelope = {
       to_investor_wallet_address: string | null;
       amount: number;
       tx_hash?: string | null;
+      status?: string | null;
     }>;
   };
   error?: string | null;
@@ -85,8 +93,9 @@ type TransferPrecheckInput = {
 };
 
 type TransferResult = {
-  transferRecordId: number;
+  transferRecordId: number | null;
   txHash: string;
+  onchainStatus: "confirmed" | "failed";
   recipientWallet: string;
   senderWallet: string;
   disclosureDataId: string;
@@ -94,6 +103,26 @@ type TransferResult = {
   recipientInvestorName: string;
   backendTxPersisted: boolean;
 };
+
+function disclosureMatchesCallerWallet(
+  disclosure: NonNullable<DisclosureOptionsEnvelope["data"]>[number],
+  callerWallet: string | null | undefined,
+): boolean {
+  if (!disclosure.grantee) {
+    return true;
+  }
+  if (!callerWallet) {
+    return false;
+  }
+  return disclosure.grantee.toLowerCase() === callerWallet.toLowerCase();
+}
+
+function investorMatchesWallet(investor: InvestorOption | null | undefined, wallet: string | null | undefined): boolean {
+  if (!investor?.wallet_address || !wallet) {
+    return false;
+  }
+  return investor.wallet_address.trim().toLowerCase() === wallet.trim().toLowerCase();
+}
 
 export default function NewTransferPage() {
   const router = useRouter();
@@ -103,28 +132,34 @@ export default function NewTransferPage() {
   const { data: walletClient } = useWalletClient();
   const { writeContractAsync } = useWriteContract();
 
-  const [assetOptions, setAssetOptions] = useState<Array<{ id: number; name: string }>>([]);
+  const [assetOptions, setAssetOptions] = useState<Array<{ id: number; name: string; issuance_wallet: string | null }>>([]);
   const [investorOptions, setInvestorOptions] = useState<InvestorOption[]>([]);
+  const [transferHistoryOptions, setTransferHistoryOptions] =
+    useState<NonNullable<TransferFormOptionsEnvelope["data"]>["transfers"]>([]);
   const [disclosureOptions, setDisclosureOptions] = useState<NonNullable<DisclosureOptionsEnvelope["data"]>>([]);
   const [assetId, setAssetId] = useState<number>(0);
   const [fromInvestorId, setFromInvestorId] = useState<number>(0);
   const [toInvestorId, setToInvestorId] = useState<number>(0);
-  const [recipientAddressOverride, setRecipientAddressOverride] = useState("");
   const [amount, setAmount] = useState("");
   const [encryptedAmount, setEncryptedAmount] = useState("");
-  const [inputProof, setInputProof] = useState("0x");
+  const [inputProof, setInputProof] = useState("");
   const [disclosureDataId, setDisclosureDataId] = useState("");
   const [reference, setReference] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [proofGenerating, setProofGenerating] = useState(false);
   const [operatorGranting, setOperatorGranting] = useState(false);
+  const [disclosureGranting, setDisclosureGranting] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [precheckLoading, setPrecheckLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [result, setResult] = useState<TransferResult | null>(null);
   const [precheckStatus, setPrecheckStatus] = useState<TransferPrecheckStatus | null>(null);
+  const [operatorTxHash, setOperatorTxHash] = useState<string | null>(null);
+  const [disclosureTxHash, setDisclosureTxHash] = useState<string | null>(null);
+  const [proofForKey, setProofForKey] = useState<string | null>(null);
   const [currentUnix] = useState(() => Math.floor(Date.now() / 1000));
+  const [tenantRuntime, setTenantRuntime] = useState<TenantBundleRuntime | null>(null);
 
   const trimmedAmount = amount.trim();
   const parsedAmount = Number(trimmedAmount);
@@ -135,7 +170,7 @@ export default function NewTransferPage() {
   const sourceWallet = fromInvestor?.wallet_address ?? "";
   const sourceWalletTrimmed = sourceWallet.trim();
   const sourceWalletValid = isAddress(sourceWalletTrimmed);
-  const recipientAddress = recipientAddressOverride || recipientInvestor?.wallet_address || "";
+  const recipientAddress = recipientInvestor?.wallet_address || "";
   const recipientAddressTrimmed = recipientAddress.trim();
   const recipientAddressValid = isAddress(recipientAddressTrimmed);
   const encryptedAmountTrimmed = encryptedAmount.trim();
@@ -147,13 +182,35 @@ export default function NewTransferPage() {
   const hasConnectedWallet = Boolean(address);
   const onTargetChain = chainId === TARGET_CHAIN_ID;
   const selectedAssetName = assetOptions.find((item) => item.id === assetId)?.name ?? "Unknown";
+  const selectedAsset = assetOptions.find((item) => item.id === assetId) ?? null;
+  const selectedAssetIssuanceWallet = selectedAsset?.issuance_wallet?.trim() || "";
+  const confirmedTransfersForAsset = useMemo(
+    () =>
+      transferHistoryOptions.filter(
+        (item) => item.asset_id === assetId && item.status === "confirmed",
+      ).length,
+    [assetId, transferHistoryOptions],
+  );
+  const firstTransferHolderEnforced = Boolean(selectedAssetIssuanceWallet) && confirmedTransfersForAsset === 0;
+  const senderMatchesIssuanceWallet =
+    !firstTransferHolderEnforced ||
+    (sourceWalletValid && sourceWalletTrimmed.toLowerCase() === selectedAssetIssuanceWallet.toLowerCase());
+  const issuanceWalletMappedInvestor = useMemo(
+    () => investorOptions.find((item) => investorMatchesWallet(item, selectedAssetIssuanceWallet)) ?? null,
+    [investorOptions, selectedAssetIssuanceWallet],
+  );
   const proofAdapter = useMemo(() => createViemWalletClientProofAdapter(walletClient), [walletClient]);
   const sourceMatchesConnectedWallet =
     Boolean(address && sourceWalletValid && address.toLowerCase() === sourceWalletTrimmed.toLowerCase());
-  const assetDisclosureOptions = useMemo(
+  const runtimeContracts = tenantRuntime?.bundle?.contracts ?? null;
+  const runtimePrecheck = useMemo(
+    () => getTenantRuntimePrecheckStatus(tenantRuntime, TARGET_CHAIN_ID),
+    [tenantRuntime],
+  );
+  const allDisclosureOptions = useMemo(
     () =>
       disclosureOptions
-        .filter((item) => item.asset_id === assetId && item.data_id)
+        .filter((item) => item.data_id)
         .filter((item) => !item.expires_at || item.expires_at > currentUnix)
         .sort((left, right) => {
           const leftMatchesCaller = Boolean(left.grantee && address && left.grantee.toLowerCase() === address.toLowerCase());
@@ -161,13 +218,20 @@ export default function NewTransferPage() {
           if (leftMatchesCaller !== rightMatchesCaller) {
             return leftMatchesCaller ? -1 : 1;
           }
+          if (left.asset_id !== right.asset_id) {
+            return left.asset_id - right.asset_id;
+          }
           return left.id - right.id;
         }),
-    [address, assetId, currentUnix, disclosureOptions],
+    [address, currentUnix, disclosureOptions],
+  );
+  const assetDisclosureOptions = useMemo(
+    () => allDisclosureOptions.filter((item) => item.asset_id === assetId),
+    [allDisclosureOptions, assetId],
   );
   const selectedDisclosure = useMemo(
-    () => assetDisclosureOptions.find((item) => item.data_id === disclosureDataIdTrimmed) ?? null,
-    [assetDisclosureOptions, disclosureDataIdTrimmed],
+    () => allDisclosureOptions.find((item) => item.data_id === disclosureDataIdTrimmed) ?? null,
+    [allDisclosureOptions, disclosureDataIdTrimmed],
   );
   const selectedDisclosureExpired = Boolean(
     selectedDisclosure?.expires_at && selectedDisclosure.expires_at <= currentUnix,
@@ -177,12 +241,30 @@ export default function NewTransferPage() {
       !address ||
       selectedDisclosure.grantee.toLowerCase() === address.toLowerCase(),
   );
+  const activeSenderDisclosure = useMemo(
+    () =>
+      assetDisclosureOptions.find((item) =>
+        disclosureMatchesCallerWallet(item, sourceWalletTrimmed || address),
+      ) ?? null,
+    [address, assetDisclosureOptions, sourceWalletTrimmed],
+  );
+  const disclosureMissingForSender =
+    sourceWalletValid && !activeSenderDisclosure && runtimePrecheck.ok && Boolean(runtimeContracts);
   const proofReadiness = getProofReadinessItems({
     hasWallet: hasConnectedWallet,
     onTargetChain,
     amountValid,
     adapterReady: Boolean(proofAdapter),
   });
+  const proofInputKey =
+    hasConnectedWallet && onTargetChain && amountBigInt !== null
+      ? `${address?.toLowerCase()}:${TARGET_CHAIN_ID}:${amountBigInt.toString()}`
+      : null;
+  const proofReadyForInput =
+    Boolean(proofInputKey) &&
+    proofForKey === proofInputKey &&
+    encryptedAmountValid &&
+    inputProofValid;
   const onchainReadiness = getTransferReadinessItems(precheckStatus);
   const formReadiness = [
     {
@@ -193,7 +275,28 @@ export default function NewTransferPage() {
     {
       label: "Recipient wallet",
       ready: recipientAddressValid,
-      detail: recipientAddressValid ? "Recipient wallet is ready." : "Recipient wallet must be a valid EVM address.",
+      detail: recipientAddressValid
+        ? "Recipient wallet is resolved from backend investor mapping."
+        : "Recipient investor must have a valid mapped wallet.",
+    },
+    {
+      label: "Initial holder alignment",
+      ready: senderMatchesIssuanceWallet,
+      detail: !firstTransferHolderEnforced
+        ? "Asset already has confirmed transfer history, so sender is not pinned to issuance wallet."
+        : !selectedAssetIssuanceWallet
+          ? "Selected asset has no issuance wallet recorded."
+          : senderMatchesIssuanceWallet
+            ? "Sender matches the wallet that received the initial confidential mint."
+            : "First transfer must use the investor mapped to the asset issuance wallet.",
+    },
+    {
+      label: "Investor pair",
+      ready: fromInvestorId > 0 && toInvestorId > 0 && fromInvestorId !== toInvestorId,
+      detail:
+        fromInvestorId > 0 && toInvestorId > 0 && fromInvestorId !== toInvestorId
+          ? "Sender and recipient are different investor records."
+          : "Sender and recipient must be different investors.",
     },
     {
       label: "Disclosure selection",
@@ -206,25 +309,57 @@ export default function NewTransferPage() {
             ? "Selected disclosure grantee does not match the connected caller wallet."
             : "Disclosure selection is usable for pre-check.",
     },
+    {
+      label: "Tenant runtime",
+      ready: runtimePrecheck.ok,
+      detail: runtimePrecheck.ok ? runtimePrecheck.detail : `${runtimePrecheck.summary} ${runtimePrecheck.detail}`,
+    },
+    {
+      label: "Proof payload",
+      ready: proofReadyForInput,
+      detail: proofReadyForInput
+        ? "Encrypted amount + input proof were generated for current wallet/chain/amount."
+        : "NOX proof must be generated in-browser for the current wallet/chain/amount.",
+    },
   ];
 
   const canSubmit =
     amountValid &&
     sourceWalletValid &&
     recipientAddressValid &&
-    encryptedAmountValid &&
+    proofReadyForInput &&
     disclosureDataIdValid &&
-    inputProofValid &&
     assetId > 0 &&
     fromInvestorId > 0 &&
     toInvestorId > 0 &&
     hasConnectedWallet &&
     onTargetChain &&
+    runtimePrecheck.ok &&
     Boolean(precheckStatus?.ok) &&
     !submitting &&
     !proofGenerating &&
+    !disclosureGranting &&
     !precheckLoading &&
-    !loadingOptions;
+    !loadingOptions &&
+    fromInvestorId !== toInvestorId &&
+    senderMatchesIssuanceWallet;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadTenantRuntime() {
+      const runtime = await fetchTenantBundleRuntime();
+      if (!active) {
+        return;
+      }
+      setTenantRuntime(runtime);
+    }
+
+    void loadTenantRuntime();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const transferFlowAdapter = useMemo<OptionalWeb3FlowAdapter<TransferPrecheckInput> | undefined>(() => {
     if (!address || !sourceWalletValid || !disclosureDataIdValid) {
@@ -233,10 +368,16 @@ export default function NewTransferPage() {
 
     return {
       async precheck(input) {
+        if (!runtimePrecheck.ok) {
+          throw new Error(`${runtimePrecheck.summary} ${runtimePrecheck.action}`);
+        }
         const status = await getTransferPrecheckStatus({
           disclosureDataId: input.disclosure_data_id,
           caller: address,
           from: sourceWalletTrimmed as Address,
+          tokenAddress: runtimeContracts?.confidentialRwaToken as Address | undefined,
+          disclosureRegistry: runtimeContracts?.disclosureRegistry as Address | undefined,
+          transferController: runtimeContracts?.transferController as Address | undefined,
         });
         setPrecheckStatus(status);
         if (!status.ok) {
@@ -251,16 +392,61 @@ export default function NewTransferPage() {
           : [decoded.message, decoded.action].filter(Boolean).join(" ");
       },
     };
-  }, [address, disclosureDataIdValid, sourceWalletTrimmed, sourceWalletValid]);
+  }, [
+    address,
+    disclosureDataIdValid,
+    runtimeContracts?.confidentialRwaToken,
+    runtimeContracts?.disclosureRegistry,
+    runtimeContracts?.transferController,
+    runtimePrecheck.action,
+    runtimePrecheck.ok,
+    runtimePrecheck.summary,
+    sourceWalletTrimmed,
+    sourceWalletValid,
+  ]);
+
+  function deriveDisclosureDataId(): `0x${string}` {
+    const nonce = BigInt(Date.now());
+    return keccak256(
+      encodeAbiParameters(
+        [
+          { type: "uint256", name: "chainId" },
+          { type: "uint256", name: "assetId" },
+          { type: "address", name: "holder" },
+          { type: "address", name: "recipient" },
+          { type: "uint256", name: "nonce" },
+        ],
+        [
+          BigInt(TARGET_CHAIN_ID),
+          BigInt(assetId),
+          sourceWalletTrimmed as Address,
+          recipientAddressTrimmed as Address,
+          nonce,
+        ],
+      ),
+    );
+  }
+
+  async function refreshDisclosureOptions(nextDisclosureDataId?: string) {
+    const response = await fetch("/api/disclosures", { cache: "no-store" });
+    const payload = (await response.json()) as DisclosureOptionsEnvelope;
+    if (!response.ok || !payload.success || !payload.data) {
+      throw new Error(payload.error || "Failed to refresh disclosure options.");
+    }
+    setDisclosureOptions(payload.data);
+    if (nextDisclosureDataId) {
+      setDisclosureDataId(nextDisclosureDataId);
+    }
+  }
 
   const recipientWalletHint = useMemo(() => {
     if (recipientInvestor?.wallet_address) {
       return `Auto-filled from investor #${recipientInvestor.id} wallet mapping.`;
     }
     if (recipientInvestor) {
-      return `Investor #${recipientInvestor.id} has no wallet mapping yet. Manual wallet entry is required.`;
+      return `Investor #${recipientInvestor.id} has no wallet mapping yet. Complete wallet mapping before transfer.`;
     }
-    return "Select recipient investor to reuse backend wallet mapping.";
+    return "Select recipient investor with a mapped wallet.";
   }, [recipientInvestor]);
 
   useEffect(() => {
@@ -284,25 +470,63 @@ export default function NewTransferPage() {
           return;
         }
         const data = payload.data;
-        const senderInvestor = data.investors.find((item) => item.wallet_address) ?? data.investors[0];
+        const disclosuresWithIds = disclosuresPayload.data.filter((item) => item.data_id);
+        const scenarioTransfer =
+          data.transfers.find((transfer) => {
+            const matchingDisclosure = disclosuresWithIds.find(
+              (disclosure) =>
+                disclosure.asset_id === transfer.asset_id &&
+                (!disclosure.grantee ||
+                  disclosure.grantee.toLowerCase() === transfer.from_investor_wallet_address?.toLowerCase()),
+            );
+            return Boolean(
+              transfer.from_investor_wallet_address &&
+                transfer.to_investor_wallet_address &&
+                matchingDisclosure,
+            );
+          }) ??
+          data.transfers.find((transfer) => transfer.from_investor_wallet_address && transfer.to_investor_wallet_address) ??
+          null;
+
+        const scenarioAsset =
+          data.assets.find((item) => item.id === (scenarioTransfer?.asset_id ?? data.assets[0]?.id ?? 0)) ?? null;
+        const issuanceWallet = scenarioAsset?.issuance_wallet?.trim() || "";
+        const issuanceInvestor =
+          data.investors.find((item) => item.wallet_address?.trim().toLowerCase() === issuanceWallet.toLowerCase()) ?? null;
+        const senderInvestor =
+          issuanceInvestor ??
+          data.investors.find((item) => item.id === scenarioTransfer?.from_investor_id) ??
+          data.investors.find((item) => item.wallet_address) ??
+          data.investors[0];
         const recipientInvestor =
+          data.investors.find((item) => item.id === scenarioTransfer?.to_investor_id) ??
           data.investors.find((item) => item.id !== senderInvestor?.id && item.wallet_address) ??
           data.investors.find((item) => item.id !== senderInvestor?.id) ??
           data.investors[0];
-        const initialAssetId = data.assets[0]?.id || 0;
-        const initialDisclosureId =
-          disclosuresPayload.data
-            .filter((item) => item.asset_id === initialAssetId && item.data_id)
-            .find((item) => !item.grantee || !address || item.grantee.toLowerCase() === address.toLowerCase())
-            ?.data_id ?? "";
+        const initialAssetId = scenarioTransfer?.asset_id ?? data.assets[0]?.id ?? 0;
+        const initialDisclosure =
+          disclosuresWithIds
+            .filter((item) => item.asset_id === initialAssetId)
+            .find(
+              (item) =>
+                !item.grantee ||
+                item.grantee.toLowerCase() === senderInvestor?.wallet_address?.toLowerCase() ||
+                (!senderInvestor?.wallet_address && address && item.grantee.toLowerCase() === address.toLowerCase()),
+            ) ??
+          disclosuresWithIds
+            .filter((item) => item.asset_id === initialAssetId)
+            .find((item) => !item.grantee || !address || item.grantee.toLowerCase() === address.toLowerCase()) ??
+          null;
 
         setAssetOptions(data.assets);
         setInvestorOptions(data.investors);
+        setTransferHistoryOptions(data.transfers);
         setDisclosureOptions(disclosuresPayload.data);
         setAssetId((current) => current || initialAssetId);
         setFromInvestorId((current) => current || senderInvestor?.id || 0);
         setToInvestorId((current) => current || recipientInvestor?.id || 0);
-        setDisclosureDataId((current) => current || initialDisclosureId);
+        setDisclosureDataId((current) => current || initialDisclosure?.data_id || "");
+        setAmount((current) => current || (scenarioTransfer?.amount ? String(Math.trunc(scenarioTransfer.amount)) : ""));
       } catch (loadError) {
         if (!active) {
           return;
@@ -324,7 +548,7 @@ export default function NewTransferPage() {
     let active = true;
 
     async function runPrecheck() {
-      if (!address || !sourceWalletValid || !disclosureDataIdValid) {
+      if (!address || !sourceWalletValid || !disclosureDataIdValid || !runtimePrecheck.ok || !runtimeContracts) {
         setPrecheckStatus(null);
         return;
       }
@@ -335,6 +559,9 @@ export default function NewTransferPage() {
           disclosureDataId: disclosureDataIdTrimmed as `0x${string}`,
           caller: address,
           from: sourceWalletTrimmed as Address,
+          tokenAddress: runtimeContracts.confidentialRwaToken as Address,
+          disclosureRegistry: runtimeContracts.disclosureRegistry as Address,
+          transferController: runtimeContracts.transferController as Address,
         });
         if (!active) {
           return;
@@ -365,7 +592,7 @@ export default function NewTransferPage() {
               code: "READ_FAILED",
               summary: "Pre-check operator gagal.",
               from: sourceWalletTrimmed as Address,
-              transferController: contractAddresses.transferController,
+              transferController: runtimeContracts.transferController as Address,
               isOperator: null,
             },
           },
@@ -381,11 +608,37 @@ export default function NewTransferPage() {
     return () => {
       active = false;
     };
-  }, [address, disclosureDataIdTrimmed, disclosureDataIdValid, sourceWalletTrimmed, sourceWalletValid]);
+  }, [
+    address,
+    disclosureDataIdTrimmed,
+    disclosureDataIdValid,
+    runtimeContracts,
+    runtimePrecheck.ok,
+    sourceWalletTrimmed,
+    sourceWalletValid,
+  ]);
+
+  useEffect(() => {
+    if (!proofInputKey) return;
+    if (proofForKey === proofInputKey) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      void generateProof();
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proofInputKey, proofForKey]);
 
   async function generateProof() {
     setError(null);
 
+    if (!proofInputKey) {
+      setProofForKey(null);
+      setEncryptedAmount("");
+      setInputProof("");
+      return;
+    }
     if (!hasConnectedWallet) {
       setError("Connect wallet before generating encrypted amount and proof.");
       return;
@@ -398,13 +651,17 @@ export default function NewTransferPage() {
       setError("Amount harus integer positif agar bisa dienkripsi sebagai uint256.");
       return;
     }
+    if (!runtimeContracts) {
+      setError("Tenant runtime bundle is not available for proof generation.");
+      return;
+    }
 
     setProofGenerating(true);
     try {
       const generated = await generateEncryptedAmountAndProof(
         {
           amount: amountBigInt,
-          contractAddress: contractAddresses.transferController,
+          contractAddress: runtimeContracts.transferController as Address,
           chainId: TARGET_CHAIN_ID,
         },
         proofAdapter,
@@ -416,8 +673,12 @@ export default function NewTransferPage() {
 
       setEncryptedAmount(generated.encryptedAmount);
       setInputProof(generated.inputProof);
-      setSuccess(`Encrypted amount dan input proof dibuat lewat ${generated.adapter}.`);
+      setProofForKey(proofInputKey);
+      setSuccess(`NOX proof generated from browser wallet via ${generated.adapter}.`);
     } catch (proofError) {
+      setProofForKey(null);
+      setEncryptedAmount("");
+      setInputProof("");
       setError(decodeWeb3FlowError(proofError, "Failed to generate NOX proof."));
     } finally {
       setProofGenerating(false);
@@ -427,6 +688,7 @@ export default function NewTransferPage() {
   async function grantOperator() {
     setError(null);
     setSuccess(null);
+    setOperatorTxHash(null);
 
     if (!sourceWalletValid) {
       setError("Sender investor belum punya wallet mapping valid.");
@@ -440,29 +702,160 @@ export default function NewTransferPage() {
       setError(`Wallet is on the wrong network. Switch to Arbitrum Sepolia (chain ID ${TARGET_CHAIN_ID}) first.`);
       return;
     }
+    if (!runtimeContracts) {
+      setError("Tenant runtime bundle is not available. Complete onboarding and save tenant contracts first.");
+      return;
+    }
 
     setOperatorGranting(true);
     try {
-      const until = BigInt(Math.floor(Date.now() / 1000) + 60 * 60);
+      const latestBlock = await web3PublicClient.getBlock();
+      const latestTimestamp = Number(latestBlock.timestamp);
+      const operatorLifetimeSeconds = 7 * 24 * 60 * 60;
+      const until = BigInt(latestTimestamp + operatorLifetimeSeconds);
       const txHash = await writeContractAsync({
-        address: contractAddresses.confidentialRwaToken,
+        address: runtimeContracts.confidentialRwaToken as Address,
         abi: getContractAbi("confidentialRwaToken"),
         functionName: "setOperator",
-        args: [contractAddresses.transferController, until],
+        args: [runtimeContracts.transferController as Address, until],
         chainId: TARGET_CHAIN_ID,
         gas: BigInt(300000),
       });
+      setOperatorTxHash(txHash);
+      setSuccess(`Tx operator terkirim. Menunggu mined: ${txHash}`);
+      const receipt = await web3PublicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
+      });
+      if (receipt.status !== "success") {
+        throw new Error(`Tx setOperator gagal di-chain. Receipt status: ${receipt.status}. Tx hash: ${txHash}`);
+      }
       const status = await getTransferPrecheckStatus({
         disclosureDataId: disclosureDataIdTrimmed as `0x${string}`,
         caller: address,
         from: sourceWalletTrimmed as Address,
+        tokenAddress: runtimeContracts.confidentialRwaToken as Address,
+        disclosureRegistry: runtimeContracts.disclosureRegistry as Address,
+        transferController: runtimeContracts.transferController as Address,
       });
       setPrecheckStatus(status);
-      setSuccess(`Operator granted. Tx hash: ${txHash}`);
+      if (!status.checks.operator.ok) {
+        throw new Error(
+          `Tx setOperator sudah mined (${txHash}) tetapi isOperator masih false untuk holder ${sourceWalletTrimmed} dan controller ${runtimeContracts.transferController}.`,
+        );
+      }
+      setSuccess(
+        `Operator berhasil terset dan terverifikasi on-chain sampai ${new Date(Number(until) * 1000).toISOString()}. Tx hash: ${txHash}`,
+      );
     } catch (grantError) {
       setError(decodeWeb3FlowError(grantError, "Failed to grant operator access."));
     } finally {
       setOperatorGranting(false);
+    }
+  }
+
+  async function grantRequiredDisclosure() {
+    setError(null);
+    setSuccess(null);
+    setDisclosureTxHash(null);
+
+    if (!assetId) {
+      setError("Select an asset before granting disclosure.");
+      return;
+    }
+    if (!address) {
+      setError("Connect the sender wallet before granting disclosure.");
+      return;
+    }
+    if (!sourceWalletValid) {
+      setError("Sender investor must have a valid mapped wallet before disclosure can be granted.");
+      return;
+    }
+    if (!sourceMatchesConnectedWallet) {
+      setError("Connect the sender investor wallet before granting disclosure.");
+      return;
+    }
+    if (!recipientAddressValid) {
+      setError("Recipient investor must have a valid mapped wallet before disclosure can be granted.");
+      return;
+    }
+    if (!runtimePrecheck.ok) {
+      setError(`${runtimePrecheck.summary} ${runtimePrecheck.action}`);
+      return;
+    }
+    if (!runtimeContracts) {
+      setError("Tenant runtime bundle is not available. Complete onboarding and save tenant contracts first.");
+      return;
+    }
+
+    setDisclosureGranting(true);
+    try {
+      if (!onTargetChain) {
+        await switchChainAsync({ chainId: TARGET_CHAIN_ID });
+      }
+
+      const nextDisclosureDataId = deriveDisclosureDataId();
+      const expiresAtUnix = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
+      const title = `${selectedAssetName} transfer disclosure`;
+      const content = `Auto-granted disclosure for ${fromInvestor?.name || "sender"} to initiate a confidential transfer from ${sourceWalletTrimmed}.`;
+
+      const txHash = await writeContractAsync({
+        address: runtimeContracts.disclosureRegistry as Address,
+        abi: getContractAbi("disclosureRegistry"),
+        functionName: "grantDisclosure",
+        args: [
+          nextDisclosureDataId,
+          sourceWalletTrimmed as Address,
+          BigInt(expiresAtUnix),
+          title,
+        ],
+        chainId: TARGET_CHAIN_ID,
+        gas: BigInt(300000),
+      });
+      setDisclosureTxHash(txHash);
+      setSuccess(`Disclosure grant tx sent. Waiting for confirmation: ${txHash}`);
+
+      const receipt = await web3PublicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
+      });
+      if (receipt.status !== "success") {
+        throw new Error(`Disclosure grant reverted. Tx hash: ${txHash}`);
+      }
+
+      const response = await fetch("/api/disclosures", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          asset_id: assetId,
+          title,
+          content,
+          ...(fromInvestorId > 0 ? { grantee_investor_id: fromInvestorId } : {}),
+          grantee_wallet_address: sourceWalletTrimmed,
+          disclosure_data_id: nextDisclosureDataId,
+          expires_at_unix: expiresAtUnix,
+          grant_tx_hash: txHash,
+          onchain_metadata: {
+            chain_id: TARGET_CHAIN_ID,
+            disclosure_registry_address: runtimeContracts.disclosureRegistry,
+            disclosure_data_id: nextDisclosureDataId,
+            grantee_wallet_address: sourceWalletTrimmed,
+            expires_at_unix: expiresAtUnix,
+            grant_tx_hash: txHash,
+          },
+        }),
+      });
+      const payload = (await response.json()) as { success: boolean; error?: string | null };
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || `Disclosure grant confirmed, but backend persistence failed. Tx hash: ${txHash}`);
+      }
+
+      await refreshDisclosureOptions(nextDisclosureDataId);
+      setSuccess(`Disclosure granted, persisted, and selected for transfer. Tx hash: ${txHash}`);
+    } catch (grantError) {
+      setError(decodeWeb3FlowError(grantError, "Failed to grant required disclosure."));
+    } finally {
+      setDisclosureGranting(false);
     }
   }
 
@@ -487,20 +880,36 @@ export default function NewTransferPage() {
       setError("Recipient wallet address is invalid. Use EVM address format `0x...`.");
       return;
     }
+    if (!runtimePrecheck.ok) {
+      setError(`${runtimePrecheck.summary} ${runtimePrecheck.action}`);
+      return;
+    }
+    if (!runtimeContracts) {
+      setError("Tenant runtime bundle is not available. Complete onboarding and save tenant contracts first.");
+      return;
+    }
+    if (firstTransferHolderEnforced && !issuanceWalletMappedInvestor) {
+      setError(
+        `First transfer for this asset requires an investor mapped to the initial issuance wallet ${selectedAssetIssuanceWallet}. Create or update that investor mapping first.`,
+      );
+      return;
+    }
+    if (!senderMatchesIssuanceWallet) {
+      setError(
+        `First transfer must be sent from the investor mapped to the initial issuance wallet ${selectedAssetIssuanceWallet}.`,
+      );
+      return;
+    }
     if (!amountValid) {
       setError("Amount must be greater than 0.");
       return;
     }
-    if (!encryptedAmountValid) {
-      setError("Encrypted amount must be bytes32 (`0x` + 64 hex chars).");
+    if (!proofReadyForInput || !proofInputKey || proofForKey !== proofInputKey) {
+      setError("NOX proof is missing or stale. Wait for browser proof generation to complete for the current amount.");
       return;
     }
     if (!disclosureDataIdValid) {
       setError("Disclosure data ID must be bytes32 (`0x` + 64 hex chars).");
-      return;
-    }
-    if (!inputProofValid) {
-      setError("Input proof must be valid hex bytes (`0x...`).");
       return;
     }
 
@@ -510,7 +919,7 @@ export default function NewTransferPage() {
         await switchChainAsync({ chainId: TARGET_CHAIN_ID });
       }
 
-        const prechecked = await runOptionalWeb3Precheck(transferFlowAdapter, {
+      const prechecked = await runOptionalWeb3Precheck(transferFlowAdapter, {
         sender_wallet: sourceWalletTrimmed,
         recipient_wallet: recipientAddressTrimmed,
         encrypted_amount: encryptedAmountTrimmed as `0x${string}`,
@@ -519,7 +928,7 @@ export default function NewTransferPage() {
       });
 
       const txHash = await writeContractAsync({
-        address: contractAddresses.transferController,
+        address: runtimeContracts.transferController as Address,
         abi: getContractAbi("transferController"),
         functionName: "confidentialTransferFromWithDisclosure",
         args: [
@@ -532,40 +941,94 @@ export default function NewTransferPage() {
         chainId: TARGET_CHAIN_ID,
         gas: BigInt(900000),
       });
+      setSuccess(`Transfer tx terkirim. Menunggu mined: ${txHash}`);
 
-      const response = await fetch("/api/transfers", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          asset_id: assetId,
-          from_investor_id: fromInvestorId,
-          to_investor_id: toInvestorId,
-          amount: parsedAmount,
-          tx_hash: txHash,
-          sender_wallet_address: prechecked.sender_wallet,
-          recipient_wallet_address: prechecked.recipient_wallet,
-          disclosure_data_id: prechecked.disclosure_data_id,
-          reference_note: reference.trim(),
-        }),
+      const receipt = await web3PublicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
       });
-      const payload = (await response.json()) as TransferEnvelope;
 
-      if (!response.ok || !payload.success || !payload.data) {
+      const persistTransferRecord = async (txStatus: "confirmed" | "reverted"): Promise<TransferEnvelope> => {
+        const response = await fetch("/api/transfers", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            asset_id: assetId,
+            from_investor_id: fromInvestorId,
+            to_investor_id: toInvestorId,
+            amount: parsedAmount,
+            tx_hash: txHash,
+            sender_wallet_address: prechecked.sender_wallet,
+            recipient_wallet_address: prechecked.recipient_wallet,
+            disclosure_data_id: prechecked.disclosure_data_id,
+            reference_note: reference.trim(),
+            tx_status: txStatus,
+            onchain_metadata: {
+              chain_id: TARGET_CHAIN_ID,
+              tx_hash: txHash,
+              tx_status: txStatus,
+              sender_wallet_address: prechecked.sender_wallet,
+              recipient_wallet_address: prechecked.recipient_wallet,
+              disclosure_data_id: prechecked.disclosure_data_id,
+              transfer_controller_address: runtimeContracts.transferController,
+              token_address: runtimeContracts.confidentialRwaToken,
+              disclosure_registry_address: runtimeContracts.disclosureRegistry,
+              encrypted_amount: prechecked.encrypted_amount,
+              input_proof: prechecked.input_proof,
+            },
+          }),
+        });
+        const payload = (await response.json()) as TransferEnvelope;
+        if (!response.ok || !payload.success) {
+          throw new Error(
+            payload.error
+              ? `${payload.error} Tx hash: ${txHash}`
+              : `Backend transfer persistence failed. Tx hash: ${txHash}`,
+          );
+        }
+        return payload;
+      };
+
+      if (receipt.status !== "success") {
+        let failedPayload: TransferEnvelope | null = null;
+        try {
+          failedPayload = await persistTransferRecord("reverted");
+        } catch (persistError) {
+          console.error("[transfer] failed tx audit persistence failed", persistError);
+        }
+        const failedPersisted = Boolean(failedPayload?.data?.tx_hash);
+        setResult({
+          transferRecordId: failedPayload?.data?.id ?? null,
+          txHash,
+          onchainStatus: "failed",
+          senderWallet: prechecked.sender_wallet,
+          recipientWallet: prechecked.recipient_wallet,
+          disclosureDataId: prechecked.disclosure_data_id,
+          senderInvestorName: fromInvestor?.name || `Investor #${fromInvestorId}`,
+          recipientInvestorName: recipientInvestor?.name || `Investor #${toInvestorId}`,
+          backendTxPersisted: failedPersisted,
+        });
         throw new Error(
-          payload.error
-            ? `${payload.error} On-chain transfer hash: ${txHash}`
-            : `On-chain transfer succeeded, but backend metadata persistence failed. Transfer hash: ${txHash}`,
+          failedPersisted
+            ? `Transfer reverted di-chain. Tx hash: ${txHash}. Record audit tersimpan sebagai #${failedPayload?.data?.id}.`
+            : `Transfer reverted di-chain. Tx hash: ${txHash}.`,
         );
       }
 
+      const payload = await persistTransferRecord("confirmed");
+      if (!payload.data) {
+        throw new Error(`Transfer confirmed on-chain, but backend response has no data. Tx hash: ${txHash}`);
+      }
       const backendTxPersisted = Boolean(payload.data.tx_hash);
       if (!backendTxPersisted) {
-        throw new Error(`On-chain transfer succeeded, but backend did not persist tx_hash. Transfer hash: ${txHash}`);
+        throw new Error(`Transfer confirmed on-chain, but backend did not persist tx_hash. Tx hash: ${txHash}`);
       }
-      setSuccess("Confidential transfer submitted and backend record updated.");
+
+      setSuccess("Confidential transfer confirmed on-chain and backend record updated.");
       setResult({
         transferRecordId: payload.data.id,
         txHash,
+        onchainStatus: "confirmed",
         senderWallet: prechecked.sender_wallet,
         recipientWallet: prechecked.recipient_wallet,
         disclosureDataId: prechecked.disclosure_data_id,
@@ -596,7 +1059,7 @@ export default function NewTransferPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
         <div className="space-y-6">
-          <SectionCard title="Transfer form" description="Investor selections reuse backend wallet mapping. Manual wallet entry is only needed when the mapping is missing.">
+          <SectionCard title="Transfer form" description="Primary flow uses mapped investor wallets, selected disclosure metadata, and browser-generated NOX proof.">
             <form
               className="grid gap-5 md:grid-cols-2"
               onSubmit={(event) => {
@@ -611,12 +1074,31 @@ export default function NewTransferPage() {
                   value={assetId}
                   onChange={(event) => {
                     const nextAssetId = Number(event.target.value);
+                    const nextAsset = assetOptions.find((item) => item.id === nextAssetId) ?? null;
+                    const nextIssuanceWallet = nextAsset?.issuance_wallet?.trim() || "";
+                    const nextConfirmedTransferCount = transferHistoryOptions.filter(
+                      (item) => item.asset_id === nextAssetId && item.status === "confirmed",
+                    ).length;
+                    const nextIssuanceInvestor =
+                      investorOptions.find((item) => investorMatchesWallet(item, nextIssuanceWallet)) ?? null;
+                    const nextSenderInvestor =
+                      nextIssuanceWallet && nextConfirmedTransferCount === 0
+                        ? nextIssuanceInvestor
+                        : investorOptions.find((item) => item.id === fromInvestorId) ?? null;
                     const nextDisclosureId =
-                      disclosureOptions
-                        .filter((item) => item.asset_id === nextAssetId && item.data_id)
-                        .find((item) => !item.grantee || !address || item.grantee.toLowerCase() === address.toLowerCase())
+                      allDisclosureOptions
+                        .filter((item) => item.asset_id === nextAssetId)
+                        .find((item) =>
+                          disclosureMatchesCallerWallet(
+                            item,
+                            nextSenderInvestor?.wallet_address?.trim() || address,
+                          ),
+                        )
                         ?.data_id ?? "";
                     setAssetId(nextAssetId);
+                    if (nextSenderInvestor?.id) {
+                      setFromInvestorId(nextSenderInvestor.id);
+                    }
                     setDisclosureDataId(nextDisclosureId);
                   }}
                   disabled={loadingOptions || !assetOptions.length}
@@ -633,7 +1115,31 @@ export default function NewTransferPage() {
                 <select
                   id="sender-investor"
                   value={fromInvestorId}
-                  onChange={(event) => setFromInvestorId(Number(event.target.value))}
+                  onChange={(event) => {
+                    const nextFromInvestorId = Number(event.target.value);
+                    const nextSenderInvestor =
+                      investorOptions.find((item) => item.id === nextFromInvestorId) ?? null;
+                    const nextSenderWallet = nextSenderInvestor?.wallet_address?.trim() || "";
+                    const nextDisclosureId =
+                      allDisclosureOptions
+                        .filter((item) => item.asset_id === assetId)
+                        .find((item) => disclosureMatchesCallerWallet(item, nextSenderWallet || address))
+                        ?.data_id ?? "";
+
+                    setFromInvestorId(nextFromInvestorId);
+                    setDisclosureDataId(nextDisclosureId);
+                    if (error === "Sender and recipient investor must be different records.") {
+                      setError(null);
+                    }
+
+                    if (nextFromInvestorId === toInvestorId) {
+                      const nextRecipient =
+                        investorOptions.find((item) => item.id !== nextFromInvestorId && item.wallet_address) ??
+                        investorOptions.find((item) => item.id !== nextFromInvestorId) ??
+                        null;
+                      setToInvestorId(nextRecipient?.id || 0);
+                    }
+                  }}
                   disabled={loadingOptions || !investorOptions.length}
                   className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 text-sm text-foreground outline-none"
                 >
@@ -644,6 +1150,16 @@ export default function NewTransferPage() {
                 <p className="text-xs leading-5 text-muted">
                   Sender wallet from registry: {fromInvestor?.wallet_address || "not mapped"}
                 </p>
+                {firstTransferHolderEnforced ? (
+                  <p className="text-xs leading-5 text-warning">
+                    First transfer for this asset must start from the initial mint recipient wallet:
+                    {" "}
+                    <span className="font-mono text-foreground">{selectedAssetIssuanceWallet || "issuance wallet missing"}</span>
+                    {issuanceWalletMappedInvestor
+                      ? ` (mapped to investor #${issuanceWalletMappedInvestor.id} ${issuanceWalletMappedInvestor.name}).`
+                      : " Create or update an investor record with this wallet before transferring."}
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-2">
@@ -652,8 +1168,13 @@ export default function NewTransferPage() {
                   id="recipient-investor"
                   value={toInvestorId}
                   onChange={(event) => {
-                    setToInvestorId(Number(event.target.value));
-                    setRecipientAddressOverride("");
+                    const nextToInvestorId = Number(event.target.value);
+                    setToInvestorId(nextToInvestorId);
+                    if (nextToInvestorId === fromInvestorId) {
+                      setError("Sender and recipient investor must be different records.");
+                    } else if (error === "Sender and recipient investor must be different records.") {
+                      setError(null);
+                    }
                   }}
                   disabled={loadingOptions || !investorOptions.length}
                   className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 text-sm text-foreground outline-none"
@@ -669,7 +1190,7 @@ export default function NewTransferPage() {
                 <input
                   id="recipient-address"
                   value={recipientAddress}
-                  onChange={(event) => setRecipientAddressOverride(event.target.value)}
+                  readOnly
                   placeholder="0x..."
                   className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none placeholder:text-muted"
                 />
@@ -700,12 +1221,12 @@ export default function NewTransferPage() {
               </div>
 
               <div className="md:col-span-2 space-y-2">
-                <label htmlFor="encrypted-amount" className="text-sm font-medium text-foreground">Encrypted amount (bytes32)</label>
+                <label htmlFor="encrypted-amount" className="text-sm font-medium text-foreground">Encrypted amount (auto-generated)</label>
                 <input
                   id="encrypted-amount"
                   value={encryptedAmount}
-                  onChange={(event) => setEncryptedAmount(event.target.value)}
-                  placeholder="0x + 64 hex chars"
+                  readOnly
+                  placeholder={proofGenerating ? "Generating NOX proof..." : "Will be generated from wallet/browser"}
                   className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none placeholder:text-muted"
                 />
                 <div className="flex flex-wrap gap-3">
@@ -715,22 +1236,22 @@ export default function NewTransferPage() {
                     onClick={() => void generateProof()}
                     disabled={!hasConnectedWallet || !onTargetChain || !amountValid || proofGenerating}
                   >
-                    {proofGenerating ? "Generating NOX proof..." : "Generate NOX proof"}
+                    {proofGenerating ? "Generating NOX proof..." : "Regenerate NOX proof"}
                   </Button>
                   <p className="text-xs leading-5 text-muted">
-                    Generator memakai wallet yang sedang terhubung dan target kontrak `TransferController`.
+                    Proof is generated in-browser from the connected wallet for current amount/chain.
                   </p>
                 </div>
               </div>
 
               <div className="md:col-span-2 space-y-2">
-                <label htmlFor="input-proof" className="text-sm font-medium text-foreground">Input proof (hex bytes)</label>
+                <label htmlFor="input-proof" className="text-sm font-medium text-foreground">Input proof (auto-generated)</label>
                 <textarea
                   id="input-proof"
                   rows={3}
                   value={inputProof}
-                  onChange={(event) => setInputProof(event.target.value)}
-                  placeholder="0x..."
+                  readOnly
+                  placeholder={proofGenerating ? "Generating NOX proof..." : "Will be generated from wallet/browser"}
                   className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none placeholder:text-muted"
                 />
               </div>
@@ -740,20 +1261,55 @@ export default function NewTransferPage() {
                 <select
                   id="disclosure-option"
                   value={disclosureDataIdTrimmed}
-                  onChange={(event) => setDisclosureDataId(event.target.value)}
-                  disabled={!assetDisclosureOptions.length}
+                  onChange={(event) => {
+                    const nextDisclosureId = event.target.value;
+                    const nextDisclosure =
+                      allDisclosureOptions.find((item) => (item.data_id ?? "") === nextDisclosureId) ?? null;
+                    setDisclosureDataId(nextDisclosureId);
+                    if (nextDisclosure && nextDisclosure.asset_id !== assetId) {
+                      setAssetId(nextDisclosure.asset_id);
+                    }
+                  }}
                   className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 text-sm text-foreground outline-none"
                 >
-                  <option value="">Select disclosure for this asset</option>
+                  <option value="">Select disclosure</option>
                   {assetDisclosureOptions.map((option) => (
                     <option key={option.id} value={option.data_id ?? ""}>
-                      {`#${option.id} - ${option.title}${option.grantee ? ` -> ${option.grantee}` : ""}`}
+                      {`Asset #${option.asset_id} • #${option.id} - ${option.title}${option.grantee ? ` -> ${option.grantee}` : ""}`}
                     </option>
                   ))}
                 </select>
                 <p className="text-xs leading-5 text-muted">
-                  Uses disclosure records already stored in backend metadata. Manual bytes32 input is still available below.
+                  Uses active disclosure records already stored in backend metadata. Select a disclosure to use its bytes32 `data_id`.
                 </p>
+                {disclosureMissingForSender ? (
+                  <div className="rounded-2xl border border-warning/40 bg-surface-soft p-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Required disclosure is missing for the sender wallet.</p>
+                        <p className="mt-1 text-xs leading-5 text-muted">
+                          This will grant disclosure to <span className="font-mono text-foreground">{sourceWalletTrimmed}</span> and select it automatically.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => void grantRequiredDisclosure()}
+                        disabled={disclosureGranting || !sourceMatchesConnectedWallet || !recipientAddressValid}
+                      >
+                        {disclosureGranting ? "Granting disclosure..." : "Grant required disclosure"}
+                      </Button>
+                    </div>
+                    {!sourceMatchesConnectedWallet ? (
+                      <p className="mt-3 text-xs text-danger">Connect the sender wallet before granting disclosure.</p>
+                    ) : null}
+                  </div>
+                ) : null}
+                {!allDisclosureOptions.length ? (
+                  <p className="text-xs leading-5 text-warning">
+                    No active disclosure metadata is available yet. Use the grant action above to create the required grant from this page.
+                  </p>
+                ) : null}
                 {assetDisclosureOptions.length ? (
                   <p className="text-xs leading-5 text-muted">
                     Active disclosures are shown first, and grants for the connected caller wallet are prioritized.
@@ -761,25 +1317,16 @@ export default function NewTransferPage() {
                 ) : null}
               </div>
 
-              <div className="md:col-span-2 space-y-2">
-                <label htmlFor="disclosure-data-id" className="text-sm font-medium text-foreground">Disclosure data ID (bytes32)</label>
-                <input
-                  id="disclosure-data-id"
-                  value={disclosureDataId}
-                  onChange={(event) => setDisclosureDataId(event.target.value)}
-                  placeholder="0x + 64 hex chars"
-                  className="w-full rounded-xl border border-border bg-surface-soft px-4 py-3 font-mono text-sm text-foreground outline-none placeholder:text-muted"
-                />
-                <p className="text-xs leading-5 text-muted">
-                  Sent to the contract call and included in the frontend API payload for future backend expansion.
-                </p>
+              <div className="md:col-span-2 rounded-2xl border border-border bg-surface-soft p-4">
+                <p className="text-sm text-foreground">Resolved disclosure data ID</p>
+                <p className="mt-2 font-mono text-xs text-muted">{disclosureDataIdTrimmed || "-"}</p>
                 {selectedDisclosure ? (
-                  <p className="text-xs leading-5 text-muted">
+                  <p className="mt-2 text-xs leading-5 text-muted">
                     Selected grant grantee: <span className="font-mono text-xs text-foreground">{selectedDisclosure.grantee || "N/A"}</span>
                   </p>
                 ) : null}
                 {selectedDisclosure?.expires_at ? (
-                  <p className="text-xs leading-5 text-muted">
+                  <p className="mt-1 text-xs leading-5 text-muted">
                     Selected grant expiry: <span className="text-foreground">{new Date(selectedDisclosure.expires_at * 1000).toLocaleString()}</span>
                   </p>
                 ) : null}
@@ -793,8 +1340,13 @@ export default function NewTransferPage() {
             <SectionCard title="On-chain result" description="New on-chain metadata is preserved in the UI summary, and supported fields are persisted to backend.">
               <DetailList
                 items={[
-                  { label: "Transfer record ID", value: `#${result.transferRecordId}` },
-                  { label: "Transfer hash", value: <span className="font-mono text-xs">{result.txHash}</span> },
+                  {
+                    label: "Transfer record ID (DB)",
+                    value: result.transferRecordId ? `#${result.transferRecordId}` : "Not stored",
+                  },
+                  { label: "Transfer tx hash (on-chain)", value: <span className="font-mono text-xs">{result.txHash}</span> },
+                  { label: "Transfer ID on-chain (bytes32)", value: "Not emitted in this call path" },
+                  { label: "On-chain receipt", value: result.onchainStatus === "confirmed" ? "Success" : "Reverted" },
                   { label: "Sender wallet", value: <span className="font-mono text-xs">{result.senderWallet}</span> },
                   { label: "Disclosure data ID", value: <span className="font-mono text-xs">{result.disclosureDataId}</span> },
                   { label: "Recipient wallet", value: <span className="font-mono text-xs">{result.recipientWallet}</span> },
@@ -839,10 +1391,10 @@ export default function NewTransferPage() {
                 <span className="font-mono text-xs text-foreground">{disclosureDataIdValid ? disclosureDataIdTrimmed : "-"}</span>
               </div>
               <div className="flex items-center justify-between border-b border-border pb-3">
-                <span className="text-sm text-muted">Amount</span>
+                <span className="text-sm text-muted">Confidential amount</span>
                 <div className="text-right">
-                  <p className="text-lg font-semibold text-foreground">{amountValid ? `$${parsedAmount.toLocaleString()}` : "$0.00"}</p>
-                  <p className="text-xs text-muted">Encrypted amount submitted separately</p>
+                  <p className="text-lg font-semibold text-foreground">{amountValid ? "Encrypted payload ready" : "Not ready"}</p>
+                  <p className="text-xs text-muted">Plain amount is used locally only for NOX proof generation</p>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -861,7 +1413,7 @@ export default function NewTransferPage() {
                     ? "checking on-chain..."
                     : precheckStatus
                       ? precheckStatus.summary
-                      : "enter disclosure data id and use a sender investor with mapped wallet"}
+                      : "select disclosure and sender investor with mapped wallet"}
                 </p>
               </div>
             </div>
@@ -880,6 +1432,19 @@ export default function NewTransferPage() {
               <Button
                 variant="secondary"
                 className="w-full justify-center"
+                onClick={() => void grantRequiredDisclosure()}
+                disabled={
+                  !disclosureMissingForSender ||
+                  disclosureGranting ||
+                  !sourceMatchesConnectedWallet ||
+                  !recipientAddressValid
+                }
+              >
+                {disclosureGranting ? "Granting disclosure..." : "Grant required disclosure"}
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full justify-center"
                 onClick={() => void grantOperator()}
                 disabled={!sourceWalletValid || !sourceMatchesConnectedWallet || !disclosureDataIdValid || operatorGranting}
               >
@@ -892,6 +1457,16 @@ export default function NewTransferPage() {
                 Back to transfer log
               </Button>
             </div>
+            {operatorTxHash ? (
+              <p className="mt-3 text-xs text-muted">
+                Operator tx hash: <span className="font-mono text-foreground">{operatorTxHash}</span>
+              </p>
+            ) : null}
+            {disclosureTxHash ? (
+              <p className="mt-3 text-xs text-muted">
+                Disclosure tx hash: <span className="font-mono text-foreground">{disclosureTxHash}</span>
+              </p>
+            ) : null}
             {!hasConnectedWallet ? <p className="mt-3 text-sm text-danger">Wallet not connected. Connect wallet before transfer.</p> : null}
             {hasConnectedWallet && !onTargetChain ? (
               <p className="mt-3 text-sm text-danger">Wrong network. Switch wallet to Arbitrum Sepolia (chain ID {TARGET_CHAIN_ID}).</p>
@@ -900,11 +1475,29 @@ export default function NewTransferPage() {
             {sourceWalletValid && hasConnectedWallet && !sourceMatchesConnectedWallet ? (
               <p className="mt-3 text-sm text-danger">Connect the sender investor wallet to use the operator helper and submit the transfer from the correct holder.</p>
             ) : null}
-            {!recipientAddressValid && recipientAddressTrimmed ? <p className="mt-3 text-sm text-danger">Recipient wallet address is not valid.</p> : null}
+            {!recipientAddressValid && recipientInvestor ? (
+              <p className="mt-3 text-sm text-danger">Recipient investor must have a valid mapped wallet address.</p>
+            ) : null}
+            {firstTransferHolderEnforced && !issuanceWalletMappedInvestor ? (
+              <p className="mt-3 text-sm text-danger">
+                No investor is mapped to the initial issuance wallet {selectedAssetIssuanceWallet || "(missing)"}.
+                Create that investor mapping before the first transfer.
+              </p>
+            ) : null}
+            {firstTransferHolderEnforced && issuanceWalletMappedInvestor && !senderMatchesIssuanceWallet ? (
+              <p className="mt-3 text-sm text-danger">
+                First transfer must use investor #{issuanceWalletMappedInvestor.id} {issuanceWalletMappedInvestor.name}
+                {" "}because the initial confidential mint was sent to {selectedAssetIssuanceWallet}.
+              </p>
+            ) : null}
             {!amountValid && trimmedAmount ? <p className="mt-3 text-sm text-danger">Amount must be a positive integer for NOX proof generation.</p> : null}
-            {!encryptedAmountValid && encryptedAmountTrimmed ? <p className="mt-3 text-sm text-danger">Encrypted amount must be bytes32.</p> : null}
+            {!runtimePrecheck.ok ? <p className="mt-3 text-sm text-danger">{runtimePrecheck.summary}</p> : null}
+            {!proofReadyForInput && amountValid ? (
+              <p className="mt-3 text-sm text-danger">
+                NOX proof for the current wallet/chain/amount is not ready yet.
+              </p>
+            ) : null}
             {!disclosureDataIdValid && disclosureDataIdTrimmed ? <p className="mt-3 text-sm text-danger">Disclosure data ID must be bytes32.</p> : null}
-            {!inputProofValid && inputProofTrimmed ? <p className="mt-3 text-sm text-danger">Input proof must be valid hex bytes.</p> : null}
             {precheckStatus && !precheckStatus.ok ? <p className="mt-3 text-sm text-danger">{precheckStatus.summary}</p> : null}
           </SectionCard>
 

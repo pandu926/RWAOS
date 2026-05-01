@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getWalletSessionFromCookieHeader } from "@/lib/web3/session";
+import { getWalletSessionTokenFromRequest } from "@/lib/web3/session";
 
 type CreateDisclosureRequest = {
   asset_id: number;
@@ -11,6 +11,14 @@ type CreateDisclosureRequest = {
   disclosure_data_id?: string;
   expires_at_unix?: number;
   grant_tx_hash?: string;
+  onchain_metadata?: {
+    chain_id?: number;
+    disclosure_registry_address?: string;
+    disclosure_data_id?: string;
+    grantee_wallet_address?: string;
+    expires_at_unix?: number;
+    grant_tx_hash?: string;
+  };
 };
 
 function getBackendBaseUrl(): string {
@@ -25,7 +33,7 @@ function getBackendBaseUrl(): string {
 }
 
 export async function GET(request: Request) {
-  const token = getWalletSessionFromCookieHeader(request.headers.get("cookie"))?.token;
+  const token = getWalletSessionTokenFromRequest(request);
   if (!token) {
     return NextResponse.json(
       { success: false, error: "Missing wallet session token. Please reconnect wallet." },
@@ -65,6 +73,24 @@ function parseCreateDisclosureRequest(input: unknown): CreateDisclosureRequest {
   const disclosureDataId = typeof body.disclosure_data_id === "string" ? body.disclosure_data_id.trim() : "";
   const expiresAtUnix = Number(body.expires_at_unix);
   const grantTxHash = typeof body.grant_tx_hash === "string" ? body.grant_tx_hash.trim() : "";
+  const onchainCandidate =
+    body.onchain_metadata && typeof body.onchain_metadata === "object"
+      ? (body.onchain_metadata as Record<string, unknown>)
+      : null;
+  const onchainChainId = Number(onchainCandidate?.chain_id);
+  const onchainRegistryAddress =
+    typeof onchainCandidate?.disclosure_registry_address === "string"
+      ? onchainCandidate.disclosure_registry_address.trim()
+      : "";
+  const onchainDataId =
+    typeof onchainCandidate?.disclosure_data_id === "string" ? onchainCandidate.disclosure_data_id.trim() : "";
+  const onchainGrantee =
+    typeof onchainCandidate?.grantee_wallet_address === "string"
+      ? onchainCandidate.grantee_wallet_address.trim()
+      : "";
+  const onchainExpiresAtUnix = Number(onchainCandidate?.expires_at_unix);
+  const onchainGrantTxHash =
+    typeof onchainCandidate?.grant_tx_hash === "string" ? onchainCandidate.grant_tx_hash.trim() : "";
 
   if (!Number.isInteger(assetId) || assetId <= 0) {
     throw new Error("`asset_id` must be a positive integer.");
@@ -90,6 +116,29 @@ function parseCreateDisclosureRequest(input: unknown): CreateDisclosureRequest {
   if ((disclosureDataId || grantTxHash || body.expires_at_unix !== undefined) && !granteeWalletAddress) {
     throw new Error("`grantee_wallet_address` is required when submitting on-chain disclosure grant metadata.");
   }
+  if (onchainCandidate) {
+    if (onchainCandidate.chain_id !== undefined && (!Number.isInteger(onchainChainId) || onchainChainId <= 0)) {
+      throw new Error("`onchain_metadata.chain_id` must be a positive integer when provided.");
+    }
+    if (onchainRegistryAddress && !/^0x[a-fA-F0-9]{40}$/.test(onchainRegistryAddress)) {
+      throw new Error("`onchain_metadata.disclosure_registry_address` must be a valid EVM address.");
+    }
+    if (onchainDataId && !/^0x[a-fA-F0-9]{64}$/.test(onchainDataId)) {
+      throw new Error("`onchain_metadata.disclosure_data_id` must be a bytes32 hex value.");
+    }
+    if (onchainGrantee && !/^0x[a-fA-F0-9]{40}$/.test(onchainGrantee)) {
+      throw new Error("`onchain_metadata.grantee_wallet_address` must be a valid EVM address.");
+    }
+    if (
+      onchainCandidate.expires_at_unix !== undefined &&
+      (!Number.isInteger(onchainExpiresAtUnix) || onchainExpiresAtUnix <= 0)
+    ) {
+      throw new Error("`onchain_metadata.expires_at_unix` must be a positive UNIX timestamp when provided.");
+    }
+    if (onchainGrantTxHash && !/^0x[a-fA-F0-9]{64}$/.test(onchainGrantTxHash)) {
+      throw new Error("`onchain_metadata.grant_tx_hash` must be a valid transaction hash.");
+    }
+  }
 
   return {
     asset_id: assetId,
@@ -100,6 +149,22 @@ function parseCreateDisclosureRequest(input: unknown): CreateDisclosureRequest {
     ...(disclosureDataId ? { disclosure_data_id: disclosureDataId } : {}),
     ...(Number.isInteger(expiresAtUnix) && expiresAtUnix > 0 ? { expires_at_unix: expiresAtUnix } : {}),
     ...(grantTxHash ? { grant_tx_hash: grantTxHash } : {}),
+    ...(onchainCandidate
+      ? {
+          onchain_metadata: {
+            ...(Number.isInteger(onchainChainId) && onchainChainId > 0 ? { chain_id: onchainChainId } : {}),
+            ...(onchainRegistryAddress
+              ? { disclosure_registry_address: onchainRegistryAddress.toLowerCase() }
+              : {}),
+            ...(onchainDataId ? { disclosure_data_id: onchainDataId } : {}),
+            ...(onchainGrantee ? { grantee_wallet_address: onchainGrantee.toLowerCase() } : {}),
+            ...(Number.isInteger(onchainExpiresAtUnix) && onchainExpiresAtUnix > 0
+              ? { expires_at_unix: onchainExpiresAtUnix }
+              : {}),
+            ...(onchainGrantTxHash ? { grant_tx_hash: onchainGrantTxHash } : {}),
+          },
+        }
+      : {}),
   };
 }
 
@@ -112,7 +177,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: message }, { status: 400 });
   }
 
-  const token = getWalletSessionFromCookieHeader(request.headers.get("cookie"))?.token;
+  const token = getWalletSessionTokenFromRequest(request);
   if (!token) {
     return NextResponse.json(
       { success: false, error: "Missing wallet session token. Please reconnect wallet." },
@@ -131,10 +196,19 @@ export async function POST(request: Request) {
         asset_id: payload.asset_id,
         title: payload.title,
         content: payload.content,
-        data_id: payload.disclosure_data_id,
-        grantee: payload.grantee_wallet_address,
-        expires_at: payload.expires_at_unix,
-        tx_hash: payload.grant_tx_hash,
+        data_id:
+          payload.onchain_metadata?.disclosure_data_id ??
+          payload.disclosure_data_id,
+        grantee:
+          payload.onchain_metadata?.grantee_wallet_address ??
+          payload.grantee_wallet_address,
+        expires_at:
+          payload.onchain_metadata?.expires_at_unix ??
+          payload.expires_at_unix,
+        tx_hash:
+          payload.onchain_metadata?.grant_tx_hash ??
+          payload.grant_tx_hash,
+        ...(payload.onchain_metadata ? { onchain_metadata: payload.onchain_metadata } : {}),
       }),
       cache: "no-store",
     });

@@ -35,13 +35,14 @@ export default function LoginPage() {
                 Connect to the organization console.
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base">
-                Only whitelisted addresses with valid roles can access the application shell.
-                After connection, role mapping determines visibility for transfers,
-                disclosures, audit logs, and reports.
+                Connect wallet to create a new institutional tenant automatically,
+                or continue into your existing tenant if your wallet is already registered.
+                After login, role mapping determines visibility for transfers, disclosures,
+                audit logs, and reports.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <StatusBadge tone="success">Whitelisted institution only</StatusBadge>
+              <StatusBadge tone="success">Auto tenant onboarding</StatusBadge>
               <StatusBadge tone="neutral">Role mapping from backend</StatusBadge>
               <StatusBadge tone="neutral">Confidential operations enabled</StatusBadge>
             </div>
@@ -86,9 +87,9 @@ export default function LoginPage() {
                     <Icon name="lock" className="size-4" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-foreground">Access restricted</p>
+                    <p className="text-sm font-semibold text-foreground">Tenant-aware access</p>
                     <p className="text-sm leading-6 text-muted">
-                      Non-authorized wallet addresses are rejected based on organization allowlist.
+                      New wallet creates a tenant automatically. Existing wallet enters its existing tenant.
                     </p>
                   </div>
                 </div>

@@ -3,6 +3,7 @@
 
 # Build artifacts
 backend/target/
+backend/target-check/
 frontend/playwright-report/
 frontend/test-results/
 
