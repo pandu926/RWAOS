@@ -16,7 +16,7 @@ cd /root/RWAOS
 docker compose up -d --build
 ```
 
-Frontend: `http://127.0.0.1:3313`  
+Frontend: `http://127.0.0.1:3389`  
 Backend (internal): `http://backend:8080`
 
 ## Contracts

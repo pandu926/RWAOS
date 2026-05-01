@@ -23,7 +23,7 @@ Video ini harus membuat juri langsung paham:
 ## Pre-Recording Checklist
 
 - Jalankan aplikasi: `docker compose up -d`
-- Buka frontend: `http://127.0.0.1:3313`
+- Buka frontend: `http://127.0.0.1:3389`
 - Login dengan wallet demo/institusi.
 - Pastikan network wallet di Arbitrum Sepolia.
 - Buka tab yang dibutuhkan:

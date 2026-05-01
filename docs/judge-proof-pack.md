@@ -14,14 +14,14 @@ docker compose ps
 
 Outcome:
 - `rwaos-backend` Up
-- `rwaos-frontend` Up (`0.0.0.0:3313->3313/tcp`)
+- `rwaos-frontend` Up (`0.0.0.0:3389->3389/tcp`)
 - `rwaos-postgres` Up (healthy)
 
 2) Frontend E2E rerun
 
 ```bash
 cd /root/RWAOS/frontend
-E2E_BASE_URL=http://127.0.0.1:3313 npx playwright test
+E2E_BASE_URL=http://127.0.0.1:3389 npx playwright test
 ```
 
 Outcome:
@@ -45,7 +45,7 @@ Outcome:
 
 ```bash
 cat /root/RWAOS/contracts/deployments/onchain-proof-latest.json
-docker compose exec frontend sh -lc "wget -qO- http://127.0.0.1:3313/settings | grep -Eo 'Config status|421614|sepolia-rollup.arbitrum.io/rpc|0x00094fc240029a342fB1152bBc7a15F73C7142C2|0x5118aEC317dC21361Cad981944532F1f90D7aBb8|0x049B1712B9E624a01Eb4C40d10aBF42E89a14314|0x79279257A998d3a5E26B70cb538b09fEe2f90174'"
+docker compose exec frontend sh -lc "wget -qO- http://127.0.0.1:3389/settings | grep -Eo 'Config status|421614|sepolia-rollup.arbitrum.io/rpc|0x00094fc240029a342fB1152bBc7a15F73C7142C2|0x5118aEC317dC21361Cad981944532F1f90D7aBb8|0x049B1712B9E624a01Eb4C40d10aBF42E89a14314|0x79279257A998d3a5E26B70cb538b09fEe2f90174'"
 ```
 
 Outcome:
@@ -61,7 +61,7 @@ Outcome:
 | Runtime API flow (assets/investors/transfers/disclosures/audit) | PASS | All return `success: true` |
 | Settings page chain + address alignment | PASS | Matches latest Sepolia deployment |
 | On-chain business flow pack | PASS | `docs/onchain-proof.md` and `contracts/deployments/onchain-proof-latest.json` agree on all contract addresses and proof tx hashes, including controller transfer `0xbe4aadadc73e772823cb758d79b0e7472ab89568face868aff0701e41852c5ad` |
-| Frontend E2E rerun (latest) | PASS | `E2E_BASE_URL=http://127.0.0.1:3313 npx playwright test` => `7 passed` |
+| Frontend E2E rerun (latest) | PASS | `E2E_BASE_URL=http://127.0.0.1:3389 npx playwright test` => `7 passed` |
 
 ## Current Blockers
 

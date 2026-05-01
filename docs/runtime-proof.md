@@ -6,7 +6,7 @@ Timestamp (UTC): 2026-04-23
 
 `docker compose ps`:
 - `rwaos-backend` up
-- `rwaos-frontend` up on `0.0.0.0:3313->3313/tcp`
+- `rwaos-frontend` up on `0.0.0.0:3389->3389/tcp`
 - `rwaos-postgres` healthy
 
 ## Backend runtime API checks (from frontend container)

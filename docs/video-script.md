@@ -21,7 +21,7 @@
 
 Before hitting record:
 - [ ] RWAOS Docker stack is running: `docker compose up -d --build`
-- [ ] Frontend is accessible at `http://127.0.0.1:3313`
+- [ ] Frontend is accessible at `http://127.0.0.1:3389`
 - [ ] Open Arbiscan for the 6 tx hashes (bookmarked, ready to switch)
 - [ ] Open `contracts/contracts/ConfidentialRWAToken.sol` in editor
 - [ ] Open `contracts/deployments/arbitrumSepolia.json` in editor
@@ -64,7 +64,7 @@ Powered by iExec NOX Protocol + ERC-7984
 ## SCENE 2 — What Is RWAOS (0:30 – 0:50)
 
 ### Screen
-Switch to **RWAOS Dashboard** at `http://127.0.0.1:3313/dashboard`
+Switch to **RWAOS Dashboard** at `http://127.0.0.1:3389/dashboard`
 
 Pan slowly across the dashboard — show metrics cards, recent activity, navigation sidebar.
 
